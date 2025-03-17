@@ -1,0 +1,78 @@
+{
+    "mainMenu": [
+        {
+            "text": "Tableau de bord",
+            "icon": "https://clickdoc.webredirect.org/public/icons/tableau-de-bord.png",
+            "route": "/"
+        },
+        {
+            "text": "Agenda",
+            "icon": "https://clickdoc.webredirect.org/public/icons/agenda.png",
+            "route": "/agenda"
+        }
+    ],
+    "adminMenu": [
+        {
+            "text": "Licences",
+            "icon": "https://clickdoc.webredirect.org/public/icons/business-people.png",
+            "route": "/licences"
+        },
+        {
+            "text": "Meds Labo",
+            "icon": "https://clickdoc.webredirect.org/public/icons/medicaments.png",
+            "route": "/laboratoires-medicament"
+        }
+    ],
+    "defaultMenu": [
+        {
+            "text": "Salle d'attente",
+            "icon": "https://clickdoc.webredirect.org/public/icons/salle-dattente.png",
+            "route": "/salle-attente"
+        },
+        {
+            "text": "Dossiers",
+            "icon": "https://clickdoc.webredirect.org/public/icons/dossiers.png",
+            "route": "/dossiers"
+        },
+        {
+            "text": "Consultations",
+            "icon": "https://clickdoc.webredirect.org/public/icons/consultant.png",
+            "route": "/consultations"
+        },
+        {
+            "text": "Ordonnances",
+            "icon": "https://clickdoc.webredirect.org/public/icons/ordonnance.png",
+            "route": "/ordonnances"
+        },
+        {
+            "text": "Analyses",
+            "icon": "https://clickdoc.webredirect.org/public/icons/analyse-de-sang.png",
+            "route": "/analyses"
+        },
+        {
+            "text": "Actes médicaux",
+            "icon": "https://clickdoc.webredirect.org/public/icons/soins-medicaux.png",
+            "route": "/actes-medicaux"
+        },
+        {
+            "text": "Personnel",
+            "icon": "https://clickdoc.webredirect.org/public/icons/business-people.png",
+            "route": "/personnel"
+        },
+        {
+            "text": "Médicaments",
+            "icon": "https://clickdoc.webredirect.org/public/icons/medicaments.png",
+            "route": "/medicaments"
+        },
+        {
+            "text": "Liste Analyses",
+            "icon": "https://clickdoc.webredirect.org/public/icons/analyses.png",
+            "route": "/analyses"
+        },
+        {
+            "text": "Caisse",
+            "icon": "https://clickdoc.webredirect.org/public/icons/caisse-enregistreuse.png",
+            "route": "/caisse"
+        }
+    ]
+}

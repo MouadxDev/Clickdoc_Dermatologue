@@ -1,0 +1,101 @@
+.background {
+  background: url("/background.png");
+  background-size: cover;
+}
+.btn-doc {
+  color: white;
+  background-color: #48a9d4;
+}
+.logo-bg {
+  height:100px;
+  width:100%;
+}
+.logo-solo-bg {
+  background: url("/logo.png");
+  background-size: cover;
+  background-position:center;
+  height:30px;
+  width:30px;
+}
+.logo-solo-text {
+  background: url("/click-doc-text.png");
+  background-size: cover;
+  background-position:center;
+  height:20px;
+  width:200px;
+}
+.solo-bg {
+  height:30px;
+  width:30px;
+}
+.menu-title , .text-clickdoc
+{
+  color:#48a9d4 !important;
+  text-decoration:none
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.background-clickdoc {
+  background-color: rgba(57, 146, 193 , 0.2) !important ;
+}
+.text-uppercase {
+  text-transform: uppercase
+}
+.h-inside {
+  height: calc(100vh - 30px);
+}
+.h-thing {
+  height: calc(100vh - 260px) !important;
+  overflow-y: auto;
+}
+.h-consult {
+  height: calc(100vh - 170px) !important; 
+  overflow-y: auto;
+}
+.h-dashboard {
+  height: calc(100vh - 80px) !important; 
+  overflow-y: auto;
+}
+.h-almost {
+  height: calc(100vh - 350px);
+}
+.h-there {
+  height : calc(100vh - 320px);
+}
+.h-there-1 {
+  height : calc(100vh - 350px);
+}
+.h-there-2 {
+  height : calc(100vh - 200px);
+}
+
+/* Hide scrollbar background and up/down arrows */
+::-webkit-scrollbar {
+  width: 5px; /* Slimmer design */
+  background: none; /* No background */
+}
+
+/* Remove up/down arrows in WebKit browsers */
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Scrollbar Thumb (Draggable part) */
+::-webkit-scrollbar-thumb {
+  background-color: #c7c9cc; /* Light gray for contrast */
+  border-radius: 5px; /* Smooth UI */
+  border: 1px solid transparent; /* Blends with the background */
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c7c9cc transparent; /* No track color */
+  border-radius: 5px;
+}
+
+
