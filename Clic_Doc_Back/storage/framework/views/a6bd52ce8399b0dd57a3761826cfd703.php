@@ -250,7 +250,7 @@
             </div>
         </div>
 
-        {{-- <hr> --}}
+        
 
         <!-- Title -->
         <div class="title text-[#2c31a5]">
@@ -264,17 +264,17 @@
         <!-- Content Section -->
         <div class="content" style="display: flex;flex-direction: column;gap: 5px">
             <p style="padding-top: 70px;" class="text-[15px]">
-                Je, soussigné(e) <strong>{{ $docteur->name }}</strong>, certifie avoir examiné ce jour
-                @if(isset($patient))
-                    @if($patient->sex == 'M')
+                Je, soussigné(e) <strong><?php echo e($docteur->name, false); ?></strong>, certifie avoir examiné ce jour
+                <?php if(isset($patient)): ?>
+                    <?php if($patient->sex == 'M'): ?>
                         M.
-                    @elseif($patient->sex == 'F')
+                    <?php elseif($patient->sex == 'F'): ?>
                         Mme
-                    @else
+                    <?php else: ?>
                         Mlle
-                    @endif
-                @endif
-                <strong>{{ $patient->surname }} {{ $patient->name }}</strong>.
+                    <?php endif; ?>
+                <?php endif; ?>
+                <strong><?php echo e($patient->surname, false); ?> <?php echo e($patient->name, false); ?></strong>.
             </p>
             <p class="text-[15px]">
                 Après évaluation, l'état de santé du(de la) patient(e) nécessite un repos médical avec arrêt de travail d'une durée de 
@@ -289,9 +289,7 @@
 
         <!-- Signature Section -->
         <div class="signature text-[13px] ">
-            {{-- <p>
-                Fait à {{ $entite->city }}, le : {{ date('d/m/Y') }}
-            </p> --}}
+            
             <p>
                 Signature : _______________________
             </p>
@@ -363,3 +361,4 @@
     </script>
 </body>
 </html>
+<?php /**PATH C:\Users\user\Documents\CLICK DOC WEB APP\Clickdoc Dermatologue\Clic_Doc_Back\resources\views/certificat-medical.blade.php ENDPATH**/ ?>

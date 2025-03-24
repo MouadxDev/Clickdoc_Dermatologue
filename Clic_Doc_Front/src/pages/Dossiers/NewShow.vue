@@ -221,6 +221,7 @@ import ENV from '../../../core/env';
                            <a 
                             class="btn background-clickdoc" 
                             target="_blank" 
+                            style="display: none;"
                             :href="`${ENV.VITE_BACKEND}/certificat/maladpro/${patient.uid}/${authStore.user.id}`"
                             >
                             certificat maladie pro

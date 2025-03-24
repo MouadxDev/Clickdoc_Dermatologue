@@ -37,31 +37,36 @@ class OrdonnanceController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'consultation_id' => 'required|integer',
-            'medicament_id' => 'required|integer',
-            'posologie' => 'nullable|string',
-            'commentaire' => 'nullable|string',
-            'administration_mode' => 'nullable|string',
-            'duration_value' => 'nullable|integer',
-            'duration_unit' => 'nullable|string',
-            'frequency' => 'nullable|string',
-            'contraindications' => 'nullable|array', // Accept array
-            'matin' => 'nullable|integer',
-            'midi' => 'nullable|integer',
-            'soir' => 'nullable|integer',
-            'au_coucher' => 'nullable|integer',
-        ]);
 
-        // Convert contraindications array to a comma-separated string
-        $validated['contraindications'] = implode(',', $request->contraindications ?? []);
-
-        $ordonnance = Ordonnance::create($validated);
-
-        return response()->json($ordonnance, 201);
-    }
+     public function store(Request $request)
+     {
+         $validated = $request->validate([
+             'consultation_id' => 'required|integer',
+             'medicament_id' => 'required|integer',
+             'commentaire' => 'nullable|array',
+             'administration_mode' => 'nullable|string',
+             'duration_value' => 'nullable|integer',
+             'duration_unit' => 'nullable|string',
+             'frequency' => 'nullable|string',
+             'contraindications' => 'nullable|array',
+             'matin' => 'nullable|integer',
+             'midi' => 'nullable|integer',
+             'soir' => 'nullable|integer',
+             'au_coucher' => 'nullable|integer',
+             'treatment_context' => 'nullable|string',
+             'application_site' => 'nullable|string',
+             'special_instructions' => 'nullable|string',
+         ]);
+     
+         // Convert array fields to JSON strings
+         $validated['commentaire'] = json_encode($request->commentaire ?? []);
+         $validated['contraindications'] = json_encode($request->contraindications ?? []);
+     
+         $ordonnance = Ordonnance::create($validated);
+     
+         return response()->json($ordonnance, 201);
+     }
+     
 
     /**
      * Display the specified resource.
@@ -70,23 +75,26 @@ class OrdonnanceController extends Controller
     {
         return Ordonnance::join("medicaments as m", "m.id", '=', "ordonnances.medicament_id")
             ->where("ordonnances.consultation_id", "=", $id)
-            ->select(
-                "m.nom as medicament",
-                "ordonnances.*"
-            )
-            ->get();
+            ->select("m.nom as medicament", "ordonnances.*")
+            ->get()
+            ->map(function ($ordonnance) {
+                $ordonnance->commentaire = json_decode($ordonnance->commentaire, true);
+                $ordonnance->contraindications = json_decode($ordonnance->contraindications, true);
+                return $ordonnance;
+            });
     }
+    
 
     /**
      * Update the specified resource in storage.
-     */
+    */
+
     public function update(Request $request, string $id)
     {
         $validated = $request->validate([
             'consultation_id' => 'required|integer',
             'medicament_id' => 'required|integer',
-            'posologie' => 'nullable|string',
-            'commentaire' => 'nullable|string',
+            'commentaire' => 'nullable|array',
             'administration_mode' => 'nullable|string',
             'duration_value' => 'nullable|integer',
             'duration_unit' => 'nullable|string',
@@ -96,20 +104,26 @@ class OrdonnanceController extends Controller
             'midi' => 'nullable|integer',
             'soir' => 'nullable|integer',
             'au_coucher' => 'nullable|integer',
+            'treatment_context' => 'nullable|string',
+            'application_site' => 'nullable|string',
+            'special_instructions' => 'nullable|string',
         ]);
-
-        // Convert contraindications array to a comma-separated string
-        $validated['contraindications'] = implode(',', $request->contraindications ?? []);
-
+    
+        // Convert array fields to JSON strings
+        $validated['commentaire'] = json_encode($request->commentaire ?? []);
+        $validated['contraindications'] = json_encode($request->contraindications ?? []);
+    
         $ordonnance = Ordonnance::findOrFail($id);
         $ordonnance->update($validated);
-
+    
         return response()->json($ordonnance);
     }
+    
 
-    /**
+    /*
      * Remove the specified resource from storage.
-     */
+    */
+
     public function destroy(string $id)
     {
         $ordonnance = Ordonnance::find($id);
@@ -120,7 +134,8 @@ class OrdonnanceController extends Controller
 
     /**
      * Print the specified ordonnance resource.
-     */
+    **/
+    
     public function imprimer(string $id)
     {
         $data["ordonnance"] = Ordonnance::join("medicaments as m", "m.id", '=', "ordonnances.medicament_id")

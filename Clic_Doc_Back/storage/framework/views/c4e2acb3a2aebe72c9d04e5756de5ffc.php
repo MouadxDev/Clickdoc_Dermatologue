@@ -136,111 +136,108 @@
     <div class="m-8">
         <div class="text-center">
             <h1 class="text-[14px] font-bold text-[#2c31a5]  title">Ordonnance</h1>
-            {{-- <h2 class="text-[11px] font-bold mt-2">Patient : {{ $patient->surname }} {{ $patient->name }}</h2> --}}
+            
             <h2 class="text-[11px] font-bold mt-2"> 
-                @if(isset($patient))
-                    @if($patient->sex == 'M')
+                <?php if(isset($patient)): ?>
+                    <?php if($patient->sex == 'M'): ?>
                         M.
-                    @elseif($patient->sex == 'F')
+                    <?php elseif($patient->sex == 'F'): ?>
                         Mme
-                    @else
+                    <?php else: ?>
                         Mlle
-                    @endif
-                @endif
+                    <?php endif; ?>
+                <?php endif; ?>
 
-                 {{ $patient->surname }} {{ $patient->name }}</h2>
+                 <?php echo e($patient->surname, false); ?> <?php echo e($patient->name, false); ?></h2>
 
             <div class="text-center">
-                <p class="!text-md"> <strong> Béni Mellal le :</strong> {{ date('d/m/Y') }}</p>
+                <p class="!text-md"> <strong> Béni Mellal le :</strong> <?php echo e(date('d/m/Y'), false); ?></p>
             </div>
 
         </div>
     </div>
 
     <div class="m-8" style="font-family: 'Arial', sans-serif;">
-        @php $counter = 1; @endphp 
+        <?php $counter = 1; ?> 
 
-        @foreach ($ordonnance as $item)
+        <?php $__currentLoopData = $ordonnance; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
             <div class="container-prescription">
-                {{-- Medication Name --}}
-                @if($item->medicament)
-                    <p class="font-bold text-[15px]">{{ $counter }}. {{ $item->medicament }}</p>
-                    @php $counter++; @endphp
-                @endif
+                
+                <?php if($item->medicament): ?>
+                    <p class="font-bold text-[15px]"><?php echo e($counter, false); ?>. <?php echo e($item->medicament, false); ?></p>
+                    <?php $counter++; ?>
+                <?php endif; ?>
         
                 <p class="ml-5 text-[14px]">
-                    {{-- Frequency --}}
-                    @if($item->frequency) 
-                        {{ ucfirst($item->frequency) }}
-                    @endif
+                    
+                    <?php if($item->frequency): ?> 
+                        <?php echo e(ucfirst($item->frequency), false); ?>
+
+                    <?php endif; ?>
         
-                    {{-- Administration Mode (with correct grammar) --}}
-                    @if($item->administration_mode)
-                        @php
+                    
+                    <?php if($item->administration_mode): ?>
+                        <?php
                             $administration_mode = strtolower($item->administration_mode);
-                        @endphp
+                        ?>
         
-                        {{-- Handling "Orale" and "Sublinguale" --}}
-                        @if($administration_mode === 'orale' || $administration_mode === 'sublinguale')
-                            par voie {{ $administration_mode }}
                         
-                        {{-- Handling common topical modes (Topique, Visage, etc.) --}}
-                        @elseif(in_array($administration_mode, ['topique', 'visage', 'corps', 'lésion', 'zones inflammées', 'cuir chevelu', 'plis cutanés', 'mains', 'pieds', 'ongles', 'zones exposées au soleil', 'application occlusse', 'sous pansement']))
-                            sur {{ $administration_mode }}
+                        <?php if($administration_mode === 'orale' || $administration_mode === 'sublinguale'): ?>
+                            par voie <?php echo e($administration_mode, false); ?>
+
                         
-                        {{-- Specific case for "Visage uniquement" --}}
-                        @elseif($administration_mode === 'visage uniquement')
+                        
+                        <?php elseif(in_array($administration_mode, ['topique', 'visage', 'corps', 'lésion', 'zones inflammées', 'cuir chevelu', 'plis cutanés', 'mains', 'pieds', 'ongles', 'zones exposées au soleil', 'application occlusse', 'sous pansement'])): ?>
+                            sur <?php echo e($administration_mode, false); ?>
+
+                        
+                        
+                        <?php elseif($administration_mode === 'visage uniquement'): ?>
                             sur le visage uniquement
                         
-                        {{-- Default handling for other cases (generic "sur") --}}
-                        @else
-                            sur {{ $administration_mode }}
-                        @endif
-                    @endif
+                        
+                        <?php else: ?>
+                            sur <?php echo e($administration_mode, false); ?>
+
+                        <?php endif; ?>
+                    <?php endif; ?>
         
-                    {{-- Application Site (only if relevant) --}}
-                    @if($item->application_site)
-                        , appliquer sur {{ strtolower($item->application_site) }}
-                    @endif
+                    
+                    <?php if($item->application_site): ?>
+                        , appliquer sur <?php echo e(strtolower($item->application_site), false); ?>
+
+                    <?php endif; ?>
         
-                    {{-- Unit (if applicable) --}}
-                    @if($item->unit) 
-                        - {{ $item->unit }}
-                    @endif
+                    
+                    <?php if($item->unit): ?> 
+                        - <?php echo e($item->unit, false); ?>
+
+                    <?php endif; ?>
         
-                    {{-- Duration (properly phrased) --}}
-                    @if($item->duration_value && $item->duration_unit) 
-                        pendant {{ $item->duration_value }} {{ strtolower($item->duration_unit) }} 
-                    @endif
+                    
+                    <?php if($item->duration_value && $item->duration_unit): ?> 
+                        pendant <?php echo e($item->duration_value, false); ?> <?php echo e(strtolower($item->duration_unit), false); ?> 
+                    <?php endif; ?>
                 </p>
         
-                {{-- Comments --}}
-                @php
+                
+                <?php
                     $comments = json_decode($item->commentaire, true);
-                @endphp
-                @if(!empty($comments) && is_array($comments))
-                    <p class="ml-5 italic">{{ implode(', ', $comments) }}</p>
-                @endif
+                ?>
+                <?php if(!empty($comments) && is_array($comments)): ?>
+                    <p class="ml-5 italic"><?php echo e(implode(', ', $comments), false); ?></p>
+                <?php endif; ?>
             </div>
         
       
             
-            {{-- @if($item->contraindications)
-                <p class="ml-5 text-red-600 text-sm">
-                    <strong>Attention:</strong> 
-                    @if (is_array($item->contraindications))
-                        {{ implode(', ', $item->contraindications) }}
-                    @else
-                        {{ $item->contraindications }}
-                    @endif
-                </p>
-            @endif --}}
             
-            {{-- <hr class="my-3"> --}}
+            
+            
             <div class="my-[16px]">
 
         </div>
-        @endforeach
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
     </div>
 
 
@@ -384,4 +381,4 @@
     </script>
 
 </body>
-</html>
+</html><?php /**PATH C:\Users\user\Documents\CLICK DOC WEB APP\Clickdoc Dermatologue\Clic_Doc_Back\resources\views/ordonnance.blade.php ENDPATH**/ ?>

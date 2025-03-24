@@ -126,33 +126,26 @@
     <div class="certificate-content" style="padding-top: 70px">
         <p class="text-[15px]">
             Je soussigné(e), <b> Dr. Lamiae EL MOUTAOUI</b>, certifie avoir reçu ce jour 
-            @if(isset($patient))
-                @if($patient->sex == 'M')
+            <?php if(isset($patient)): ?>
+                <?php if($patient->sex == 'M'): ?>
                     M.
-                @elseif($patient->sex == 'F')
+                <?php elseif($patient->sex == 'F'): ?>
                     Mme
-                @else
+                <?php else: ?>
                     Mlle
-                @endif
-            @endif
-            <b>{{ $patient->surname ?? '' }} {{ $patient->name ?? '' }}</b>
-            CIN : <b>{{ $patient->CIN ?? '' }}</b>, à ma consultation.
+                <?php endif; ?>
+            <?php endif; ?>
+            <b><?php echo e($patient->surname ?? '', false); ?> <?php echo e($patient->name ?? '', false); ?></b>
+            CIN : <b><?php echo e($patient->CIN ?? '', false); ?></b>, à ma consultation.
         </p>
         <p style="margin-top: 20px;" class="text-[15px]">
             Ce certificat est délivré à l'intéressé(e) pour justifier son absence ce jour et servir et valoir ce que de droit.
         </p>
     </div>
     
-    {{-- <div class="signature">
-        <p class="text-[13px] ">
-            Cachet et signature :
-        </p>
-        <div style="height: 60px;"></div>
-    </div> --}}
+    
     <div class="signature text-[13px] ">
-        {{-- <p>
-            Fait à {{ $entite->city }}, le : {{ date('d/m/Y') }}
-        </p> --}}
+        
         <p>
             Signature : _______________________
         </p>
@@ -175,4 +168,4 @@
         document.getElementById('currentDate').textContent = formattedDate;
     </script>
 </body>
-</html>
+</html><?php /**PATH C:\Users\user\Documents\CLICK DOC WEB APP\Clickdoc Dermatologue\Clic_Doc_Back\resources\views/certificat-aptitude.blade.php ENDPATH**/ ?>

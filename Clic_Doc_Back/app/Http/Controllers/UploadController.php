@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Upload;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Response;
 
 class UploadController extends Controller
 {
@@ -29,30 +30,47 @@ class UploadController extends Controller
     public function store(Request $request)
     {
         $pseudo = time();
-        $extension = request()->file->getClientOriginalExtension();
-        if($extension=="JPEG" || $extension=="jpeg" || $extension=="JPG" ||  $extension=="jpg" || $extension=="PNG" || $extension=="png" || $extension=="HEIC" || $extension=="heic" || $extension=="SVG" || $extension=="svg" || $extension=="WEBP" || $extension=="webp" )
+        $extension = $request->file->getClientOriginalExtension();
+        
+        // Check if the file is one of the allowed types
+        if ($extension == "JPEG" || $extension == "jpeg" || $extension == "JPG" || $extension == "jpg" || 
+            $extension == "PNG" || $extension == "png" || $extension == "HEIC" || $extension == "heic" || 
+            $extension == "SVG" || $extension == "svg" || $extension == "WEBP" || $extension == "webp") 
         {
-            $fileName = $pseudo .'.'. $extension;
-            request()->file->move(public_path('files'), $fileName);
-            $fichier = new Upload();
-            $fichier -> name = $pseudo ;
-            $fichier -> extension = $extension;
-            $fichier -> full_path = env("APP_URL", '/')."/files/".$fileName;
-            $fichier -> save();
-            return ["full_path"=>$fichier->full_path];
-        }
-        else {
-            return response()->json(["message"=>"Ceci n'est pas une image"],500);
+            // Define the file name and path
+            $fileName = $pseudo . '.' . $extension;
+            $filePath = 'C:\\xampp\\storage\\app\\public\\files\\' . $fileName; // Path inside XAMPP storage
+    
+            // Move the file to the defined path
+            $request->file->move('C:\\xampp\\storage\\app\\public\\files', $fileName);
+    
+            // Generate the URL to access the file
+            $fileUrl = url("/upload/show/{$fileName}"); // Use the file name to create a URL
+
+            // Return the full path URL
+            return response()->json(["full_path" => $fileUrl]);
+        } else {
+            return response()->json(["message" => "Ceci n'est pas une image"], 500);
         }
     }
 
     /**
-     * Display the specified resource.
+     * Show the specified file.
      */
-    public function show(string $id)
+    public function show($fileName)
     {
-        //
+        // Define the file path
+        $filePath = 'C:\\xampp\\storage\\app\\public\\files\\' . $fileName;
+
+        // Check if the file exists
+        if (file_exists($filePath)) {
+            // Return the file as a response with the correct MIME type
+            return Response::download($filePath);
+        } else {
+            return response()->json(["message" => "File not found"], 404);
+        }
     }
+
 
     /**
      * Show the form for editing the specified resource.

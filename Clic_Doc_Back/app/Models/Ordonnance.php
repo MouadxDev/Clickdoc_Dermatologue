@@ -23,5 +23,13 @@ class Ordonnance extends Model
         'midi',
         'soir',
         'au_coucher',
+        'treatment_context',
+        'application_site',
+        'special_instructions',
+    ];
+
+    protected $casts = [
+        'commentaire' => 'array',  
+        'contraindications' => 'array',
     ];
 }

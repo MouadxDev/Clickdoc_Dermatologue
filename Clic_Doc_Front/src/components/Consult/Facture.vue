@@ -5,6 +5,7 @@ import { useConsultStore } from '../../../core/Data/stores/consultation';
 import { Facture } from '../../../core/Clients/Facture';
 import { Article } from '../../../core/Clients/Article';
 import { ActeMedical } from '../../../core/Clients/ActeMedical';
+import ENV from '../../../core/env'
 
 const consult = useConsultStore();
 
@@ -103,7 +104,7 @@ onBeforeMount(async () => {
     <div v-if="facture.facture != undefined && facture.facture != null && facture.facture != 0">
       <el-form label-position="top">
         <el-row :gutter="10">
-          <el-col :span="16">
+          <el-col :span="13">
             <el-form-item label="Libellé">
               <!-- Search filter for actes -->
               <el-select v-model="article.acte" class="w-full" @change="getPrix()" placeholder="Rechercher un acte" filterable>
@@ -111,16 +112,35 @@ onBeforeMount(async () => {
               </el-select>
             </el-form-item>
           </el-col>
+          
           <el-col :span="4">
             <el-form-item label="Prix">
               <el-input v-model="article.prix" />
             </el-form-item>
           </el-col>
-          <el-col :span="4">
+
+          <el-col :span="3">
+
             <el-form-item label="&nbsp">
               <button class="btn btn-sm btn-block background-clickdoc" type="button" @click="async () => { await addArticle() }">Ajouter</button>
             </el-form-item>
+
           </el-col>
+          
+          <el-col :span="4">
+
+              <el-form-item label="&nbsp">
+                <button class="btn btn-sm btn-block background-clickdoc" type="button" :href="ENV.VITE_BACKEND + '/ordonnance/' + consult.consult" >
+                  Imprimer
+                  <el-icon>
+                     <Printer />
+                  </el-icon>
+                </button>
+              </el-form-item>
+
+          </el-col>
+          
+
         </el-row>
       </el-form>
       <br />
@@ -136,10 +156,14 @@ onBeforeMount(async () => {
           </template>
         </el-table-column>
       </el-table>
+
       <br />
+
       <div class="text-right">
         Total : {{ total() }}
       </div>
+      
+
       <hr class="my-3" />
       <div class="text-right">
         <el-button class="btn btn-sm btn-block background-clickdoc" type="button" @click="async () => await saveFacture()">Enregistrer la facture</el-button>
@@ -150,6 +174,7 @@ onBeforeMount(async () => {
       <el-button class="btn btn-sm btn-block background-clickdoc" type="button" @click="async () => await generateFacture()">Générer Honoraires</el-button>
     </div>
   </div>
+  
 </template>
 
 <style>

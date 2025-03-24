@@ -7,6 +7,7 @@ use App\Http\Controllers\PrintController;
 use App\Http\Controllers\FactureController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\EXLSExportController;
+use App\Http\Controllers\UploadController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -23,6 +24,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('upload/show/{fileName}', [UploadController::class, 'show']);
 
 Route::get("/ordonnance/{id}",[OrdonnanceController::class,"imprimer"]);
 Route::get("/analyse/{id}",[AnalyseController::class,"imprimer"]);
