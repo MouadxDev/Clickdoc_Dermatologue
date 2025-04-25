@@ -25,8 +25,8 @@
     "qalendar": "^3.5.1",
     "unplugin-vue-components": "^0.25.2",
     "v-click-outside": "^3.2.0",
-    "vue-chart-3": "^3.1.8",
     "vue": "^3.3.4",
+    "vue-chart-3": "^3.1.8",
     "vue-gapi": "^2.1.2",
     "vue-router": "^4.2.4",
     "vue-use-web": "^1.0.1",
@@ -37,5 +37,7 @@
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
     "vue-tsc": "^1.8.5"
-  }
+  },
+  "main": "index.js",
+  "license": "MIT"
 }

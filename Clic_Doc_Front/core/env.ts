@@ -55,7 +55,9 @@ const ENV = {
     "VITE_BACKEND_URL_Stock":"/stock",
 
     
-    "AI_Voice2Text":"https://clickdoc.webredirect.org/flask-audio-api/"
+    "AI_Voice2Text":"https://clickdoc.webredirect.org/flask-audio-api/",
+
+    "VITE_BACKEND_URL_CONSTFILES":"/const-files"
     
 }
 // "AI_Voice2Text":"http://165.227.152.200:5000/transcribe"

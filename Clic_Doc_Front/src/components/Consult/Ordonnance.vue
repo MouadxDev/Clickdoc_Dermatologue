@@ -100,7 +100,7 @@ async function setOrdonnance() {
     Object.assign(modalForm.value, {
       unit: "",
       administrationMode: "",
-      frequency: "",
+      frequency: [],
       durationValue: null,
       durationUnit: "",
       comment: "",
@@ -162,7 +162,7 @@ const showModal = ref(false);
 const modalForm = ref({
   unit: "",
   administrationMode: "",
-  frequency: "",
+  frequency: [],
   durationValue: null,
   durationUnit: "",
   comment: "",
@@ -314,6 +314,15 @@ function decrementDose(label: "Matin" | "Midi" | "Soir" | "Au coucher") {
   }
 }
 
+function toggleFrequency(option: string) {
+  const index = modalForm.value.frequency.indexOf(option);
+  if (index > -1) {
+    modalForm.value.frequency.splice(index, 1);
+  } else {
+    modalForm.value.frequency.push(option); 
+  }
+}
+
 const contraindicationOptions = ref([
   "Allergie au médicament",
   "Insuffisance rénale",
@@ -344,29 +353,65 @@ function handleShowModal() {
     ElMessage.error('Veuillez sélectionner un médicament.');
   }
 }
+
+const loadingMedicament = ref(false);
+
+async function loadMedicaments(query: string) {
+  if (!query) return;
+  loadingMedicament.value = true;
+  try {
+    const response = await medicamentClient.getAll({ q: query });
+    medicaments.value = response; // adapt this if the data is nested
+  } catch (e) {
+    ElMessage.error("Erreur lors du chargement des médicaments");
+  } finally {
+    loadingMedicament.value = false;
+  }
+}
+
 </script>
 
 <template>
   <div class="container">
     <el-form label-position="top">
       <el-row :gutter="10">
-        <el-col :span="12">
-          <el-form-item label="Médicament">
+        <el-col :span="19">
+          <!-- <el-form-item label="Médicament">
             <el-select class="w-full" v-model="prescription.medicament_id" 
               placeholder="Rechercher un médicament"
               filterable allow-create>
               <el-option v-for="m in filteredMedicaments" :key="m.id" :value="m.id" :label="m.nom" />
             </el-select>
+          </el-form-item> -->
+          <el-form-item label="Médicament">
+              <el-select
+                class="w-full"
+                v-model="prescription.medicament_id"
+                placeholder="Rechercher un médicament"
+                filterable
+                remote
+                reserve-keyword
+                :remote-method="loadMedicaments"
+                :loading="loadingMedicament"
+              >
+                <el-option
+                  v-for="m in medicaments"
+                  :key="m.id"
+                  :value="m.id"
+                  :label="m.nom"
+                />
+              </el-select>
           </el-form-item>
+
         </el-col>
-        <el-col :span="8">
+        <!-- <el-col :span="8">
           <el-form-item label="Laboratoire">
             <el-select v-model="prescription.laboratoire" placeholder="Sélectionner laboratoire" filterable allow-create >
               <el-option v-for="laboratoire in laboratoire_list" :key="laboratoire.id" :value="laboratoire.name"
                 :label="laboratoire.name" />
             </el-select>
           </el-form-item>
-        </el-col>
+        </el-col> -->
         <el-col :span="4">
           <el-form style="display: flex; gap: 10px;">
             <el-form-item label=" &nbsp ">
@@ -565,9 +610,12 @@ function handleShowModal() {
         <div class="form-group">
           <label>Fréquence</label>
           <div class="button-grid">
-            <button v-for="option in frequencyOptions" :key="option"
-              :class="['option-button', { active: modalForm.frequency === option }]"
-              @click="modalForm.frequency = option">
+            <button
+              v-for="option in frequencyOptions"
+              :key="option"
+              :class="['option-button', { active: modalForm.frequency.includes(option) }]"
+              @click="toggleFrequency(option)"
+            >
               {{ option }}
             </button>
           </div>

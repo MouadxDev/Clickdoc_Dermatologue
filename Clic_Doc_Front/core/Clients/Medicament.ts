@@ -39,20 +39,41 @@ export class Medicament {
         }
     }
 
-    public async getAll(request : any = undefined) : Promise<any>  {
+    // public async getAll(request : any = undefined) : Promise<any>  {
+    //     try {
+    //         const response = await this.client.get(request==undefined ? "" :"?page="+request.page+"&toGet="+request.toGet)
+    //         return response.data
+    //     }
+    //     catch(error:any )
+    //     {
+    //         console.log(error)
+    //         return {
+    //             status:error.status,
+    //             data:error.response.data
+    //         }
+    //     }
+    // }
+
+    public async getAll(request: any = {}) : Promise<any> {
+        let query = '';
+        if (request.q) {
+          query = `?q=${encodeURIComponent(request.q)}`;
+        } else if (request.page && request.toGet) {
+          query = `?page=${request.page}&toGet=${request.toGet}`;
+        }
+      
         try {
-            const response = await this.client.get(request==undefined ? "" :"?page="+request.page+"&toGet="+request.toGet)
-            return response.data
+          const response = await this.client.get(query);
+          return response.data;
+        } catch (error: any) {
+          console.log(error);
+          return {
+            status: error.status,
+            data: error.response.data
+          };
         }
-        catch(error:any )
-        {
-            console.log(error)
-            return {
-                status:error.status,
-                data:error.response.data
-            }
-        }
-    }
+      }
+      
 
     public async update(request:any) : Promise<IResponse> {
         ElMessage.info("Enregistrement en cours")

@@ -81,7 +81,7 @@ import ENV from '../../../core/env';
             icon:"https://clickdoc.webredirect.org/public/icons/history.png",
             label:"Antécédents",
             name:"ants"
-        },
+        },  
         {
             icon:"https://clickdoc.webredirect.org/public/icons/history.png",
             label:"Tableau personnalisé",
@@ -265,7 +265,7 @@ import ENV from '../../../core/env';
                                 </div>
                             </el-col>
                             <el-col :lg="16" :sm="24">
-                                <span class=" font-bold"> {{ patient.sex=="M"?"M.":"Mme"}} {{patient.name }} {{ patient.surname }} </span><br>
+                                <span class=" font-bold">{{ patient.sex === 'M' ? 'M.' : (patient.sex === 'F' ? 'Mme' : 'Mlle') }} {{patient.name }} {{ patient.surname }} </span><br>
                                 <span> né{{patient.sex=="M"?"":"e"}} le {{ patient.date_of_birth }}  </span><br>
                                 <span> CIN : {{patient.CIN}} </span> <br>
                                 <span> Téléphone : {{patient.phone}} </span> <br>
@@ -298,13 +298,19 @@ import ENV from '../../../core/env';
                                 Données vitales
                             </span>
                         </div>
-                        <el-row :gutter="10" class="mt-4">
+
+                        <el-row :gutter="10" class="mt-4" >
                             <el-col :lg="15" :sm="24" >
                                 <ul class="ml-1">
                                     <li> <b class="text-clickdoc">Constantes : </b>
                                         <ul class="ml-4">
                                             <li> Diabetes :  {{ patient.diabetes==1?"Type 1":patient.diabetes==2?"Type 2":patient.diabetes==3?"Prédiabètes":"Non" }} </li>
                                             <li> Groupe sanguin : {{ patient.blood_type }} </li>
+                                            <li v-if="patient.sex === 'F' || patient.sex === 'Mlle'">
+                                                Statut marital :  {{ patient.sex === 'F' ? 'Mariée' : 'Célibataire' }}
+                                            </li>
+
+
                                         </ul>    
                                     </li>
                                     <li> <b class="text-clickdoc"> Mesures : </b> <br>
@@ -357,6 +363,7 @@ import ENV from '../../../core/env';
                                 <img src="https://clickdoc.webredirect.org/public/icons/silhouette.png" class="w-full">
                             </el-col>
                         </el-row>
+
                     </div>
                     <div class="rounded-2xl  p-4 bg-white mt-3 shadow-xl" v-if="consultation.status==true" >
                         <button class="btn btn-block background-clickdoc mb-2" @click="notifier() ">

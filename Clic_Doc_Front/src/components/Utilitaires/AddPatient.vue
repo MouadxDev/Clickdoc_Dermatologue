@@ -91,8 +91,11 @@
                             <el-col :span="6">
                                 <el-form-item label="Civilité (*)">
                                     <el-select @change="getAvatar()" v-model="patient.sex" class="w-full" >
+
                                         <el-option label="Monsieur" :value="'M'" />
                                         <el-option label="Madame" :value="'F'" />
+                                        <el-option label="Demoiselle" :value="'Mlle'" />
+
                                     </el-select>
                                 </el-form-item>
                             </el-col>
