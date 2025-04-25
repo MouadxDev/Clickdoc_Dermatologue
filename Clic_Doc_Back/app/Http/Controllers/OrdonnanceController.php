@@ -47,7 +47,7 @@ class OrdonnanceController extends Controller
              'administration_mode' => 'nullable|string',
              'duration_value' => 'nullable|integer',
              'duration_unit' => 'nullable|string',
-             'frequency' => 'nullable|string',
+             'frequency' => 'nullable|array',
              'contraindications' => 'nullable|array',
              'matin' => 'nullable|integer',
              'midi' => 'nullable|integer',
@@ -60,6 +60,7 @@ class OrdonnanceController extends Controller
      
          // Convert array fields to JSON strings
          $validated['commentaire'] = json_encode($request->commentaire ?? []);
+         $validated['frequency'] = json_encode($request->frequency ?? []);
          $validated['contraindications'] = json_encode($request->contraindications ?? []);
      
          $ordonnance = Ordonnance::create($validated);
@@ -98,7 +99,7 @@ class OrdonnanceController extends Controller
             'administration_mode' => 'nullable|string',
             'duration_value' => 'nullable|integer',
             'duration_unit' => 'nullable|string',
-            'frequency' => 'nullable|string',
+            'frequency' => 'nullable|array',
             'contraindications' => 'nullable|array',
             'matin' => 'nullable|integer',
             'midi' => 'nullable|integer',
@@ -111,6 +112,7 @@ class OrdonnanceController extends Controller
     
         // Convert array fields to JSON strings
         $validated['commentaire'] = json_encode($request->commentaire ?? []);
+        $validated['frequency'] = json_encode($request->frequency ?? []);
         $validated['contraindications'] = json_encode($request->contraindications ?? []);
     
         $ordonnance = Ordonnance::findOrFail($id);

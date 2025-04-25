@@ -38,6 +38,8 @@ use App\Http\Controllers\TasksController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\AiSummaryController;
+use App\Http\Controllers\ConstFileController;
 
 
 /*
@@ -98,7 +100,10 @@ Route::prefix("/v1")->middleware('auth:sanctum')->group(function (){
     Route::resource("/licence",EntityController::class);
     Route::resource("/users",UsersController::class);
 
+    Route::post('/summarize', [AiSummaryController::class, 'summarize']);
     
+    Route::resource('/const-files', ConstFileController::class);
+
     Route::post("/waiting-list/request",[WaitingList::class,"isWaiting"]);
 
     Route::post('/rendez-vous/request',[RendezVous::class,'is_today']);

@@ -11,20 +11,45 @@ class MedicamentController extends Controller
     /**
      * Display a listing of the resource.
      */
+    
+    // public function index()
+    // {
+    //     $model = Medicament::join("laboratoires as l" , "l.id","=","medicaments.lab_id")
+        
+    //     ->select('l.name as lab',"medicaments.*");
+
+    //     if(request()->has("toGet"))
+    //         return $model->paginate(request()->toGet);
+    //     else
+    //     {
+    //         return $model->get();
+    //     }
+    
+    // }
+
     public function index()
     {
-        $model = Medicament::join("laboratoires as l" , "l.id","=","medicaments.lab_id")
-        
-        ->select('l.name as lab',"medicaments.*");
+        $query = Medicament::join("laboratoires as l", "l.id", "=", "medicaments.lab_id")
+            ->select("l.name as lab", "medicaments.*");
 
-        if(request()->has("toGet"))
-            return $model->paginate(request()->toGet);
-        else
-        {
-            return $model->get();
+        // 🔍 Search by keyword in name or lab name
+        if (request()->has("q") && !empty(request()->q)) {
+            $q = request()->q;
+            $query->where(function($subQuery) use ($q) {
+                $subQuery->where("medicaments.nom", "LIKE", "%$q%")
+                        ->orWhere("l.name", "LIKE", "%$q%");
+            });
         }
-    
+
+        // ⛔ Limit to max 10 if not using pagination
+        if (request()->has("toGet")) {
+            return $query->paginate(request()->toGet);
+        } else {
+            return $query->limit(10)->get();
+        }
     }
+
+
 
     /**
      * Show the form for creating a new resource.

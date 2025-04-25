@@ -68,27 +68,30 @@
   <section class="a5-page">
     <div class="m-4 relative z-10" style="margin: 1rem 0.4in;">
         <div class="text-center" style="padding-top: 100px">
-            <p style="font-size: 0.8rem;"> {{ date('d/m/Y') }}</p>
+            <p style="font-size: 0.8rem;"> <?php echo e(date('d/m/Y'), false); ?></p>
           <h1 class="title text-[#354b88] pt-[10px] " >Analyse</h1>
           <h2 class="text-[15px] font-bold ">
-            @if(isset($patient))
-              @if($patient->sex == 'M') M.
-              @elseif($patient->sex == 'F') Mme
-              @else Mlle
-              @endif
-            @endif
-            {{ $patient->surname }} {{ $patient->name }}
+            <?php if(isset($patient)): ?>
+              <?php if($patient->sex == 'M'): ?> M.
+              <?php elseif($patient->sex == 'F'): ?> Mme
+              <?php else: ?> Mlle
+              <?php endif; ?>
+            <?php endif; ?>
+            <?php echo e($patient->surname, false); ?> <?php echo e($patient->name, false); ?>
+
           </h2>
         </div>
       </div>
       
     <div class="analyses-container">
-      @foreach ($analyses as $item)
+      <?php $__currentLoopData = $analyses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
         <div class="analyses-item">
-          {{ $item->libelle }}
+          <?php echo e($item->libelle, false); ?>
+
         </div>
-      @endforeach
+      <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
     </div>
   </section>
 </body>
 </html>
+<?php /**PATH C:\Users\user\Documents\CLICK DOC WEB APP\Clickdoc Dermatologue\Clic_Doc_Back\resources\views/analyses.blade.php ENDPATH**/ ?>
