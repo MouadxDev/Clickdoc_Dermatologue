@@ -47,6 +47,11 @@ import ENV from '../../../core/env';
             name:"sit-financiere"
         },
         {
+            icon:"https://clickdoc.webredirect.org/public/icons/folder.png",
+            label:"Fiche patient",
+            name:"FichePatient"
+        },
+        {
             icon:"https://clickdoc.webredirect.org/public/icons/imagerie.png",
             label:"Imagerie",
             name:"imagerie"

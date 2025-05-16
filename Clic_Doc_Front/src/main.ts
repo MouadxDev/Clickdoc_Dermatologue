@@ -32,6 +32,7 @@ import AntDrugs from './components/Folder/AntDrugs.vue';
 import Antecedents from './components/Folder/Antecedents.vue';
 import Consultations from './components/Folder/Consultations.vue';
 import Ordonnances from './components/Folder/Ordonnances.vue';
+import FichePatient from './components/Folder/FichePatient.vue';
 import RendezVous from './components/Folder/RendezVous.vue';
 import Finance from './components/Folder/Finance.vue';
 import Analyses from './components/Folder/Analyses.vue';
@@ -105,6 +106,7 @@ app.component("ant-allergies",AntAllergies)
 app.component("ant-drugs",AntDrugs)
 app.component("consultations",Consultations)
 app.component("ant-ordonnances",Ordonnances)
+app.component("FichePatient",FichePatient)
 app.component("rendez-vous",RendezVous)
 app.component("ants",Antecedents)
 app.component("imagerie",Imagerie)

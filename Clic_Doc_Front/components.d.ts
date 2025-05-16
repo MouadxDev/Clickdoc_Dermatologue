@@ -28,6 +28,7 @@ declare module 'vue' {
     EditPatient: typeof import('./src/components/Utilitaires/EditPatient.vue')['default']
     ExamenPhysique: typeof import('./src/components/Consult/ExamenPhysique.vue')['default']
     Facture: typeof import('./src/components/Consult/Facture.vue')['default']
+    FichePatient: typeof import('./src/components/Folder/FichePatient.vue')['default']
     Finance: typeof import('./src/components/Folder/Finance.vue')['default']
     Imagerie: typeof import('./src/components/Folder/Imagerie.vue')['default']
     Observation: typeof import('./src/components/Consult/Observation.vue')['default']

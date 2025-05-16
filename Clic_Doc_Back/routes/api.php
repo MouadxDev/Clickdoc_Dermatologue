@@ -40,6 +40,7 @@ use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\AiSummaryController;
 use App\Http\Controllers\ConstFileController;
+use App\Http\Controllers\FichePatientController;
 
 
 /*
@@ -56,6 +57,7 @@ use App\Http\Controllers\ConstFileController;
 Route::prefix("/initiate")->group(function(){
     Route::post("/request",[FunctionalitiesController::class, "isInitiated"]);
     Route::post("/go",[FunctionalitiesController::class, "initiate"]);
+    Route::resource('fiche_patient', FichePatientController::class);
 });
 
 Route::prefix("/auth")->group(function(){
@@ -65,6 +67,7 @@ Route::prefix("/auth")->group(function(){
 
 Route::prefix("/v1")->middleware('auth:sanctum')->group(function (){
     Route::resource("/patient",PatientController::class);
+    Route::resource("/fiche_patient",FichePatientController::class);
     Route::resource("/patient_ant_medicaux",AntMedicController::class);
     Route::resource("/patient_ant_chirurgicaux",AntChirurgicaux::class);
     Route::resource("/patient_ant_familiaux",AntFamiliaux::class);

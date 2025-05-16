@@ -53,6 +53,8 @@ const ENV = {
 
     "VITE_BACKEND_URL_REPORTING":"/reporting",
     "VITE_BACKEND_URL_Stock":"/stock",
+    "VITE_BACKEND_URL_FICHE_PATIENT":"/fiche_patient",
+    
 
     
     "AI_Voice2Text":"https://clickdoc.webredirect.org/flask-audio-api/",

@@ -159,6 +159,9 @@ onBeforeMount(async () => {
 
 // Modal visibility state
 const showModal = ref(false);
+const isEditMode = ref(false);
+const currentEditId = ref<number | null>(null);
+
 const modalForm = ref({
   unit: "",
   administrationMode: "",
@@ -171,6 +174,160 @@ const modalForm = ref({
   applicationSite: "",
   specialInstructions: "",
 });
+
+// Reset modal form to default values
+function resetModalForm() {
+  modalForm.value = {
+    unit: "",
+    administrationMode: "",
+    frequency: [],
+    durationValue: null,
+    durationUnit: "",
+    comment: "",
+    contraindications: [],
+    treatmentContext: "",
+    applicationSite: "",
+    specialInstructions: "",
+  };
+  
+  doseValues.value = {
+    Matin: 0,
+    Midi: 0,
+    Soir: 0,
+    "Au coucher": 0,
+  };
+}
+
+function handleShowModal() {
+  if (prescription.value.medicament_id) {
+    isEditMode.value = false;
+    currentEditId.value = null;
+    resetModalForm();
+    showModal.value = true;
+  } else {
+    ElMessage.error('Veuillez sélectionner un médicament.');
+  }
+}
+
+// Helper function to clean frequency data
+function cleanFrequencyData(frequency: any): string[] {
+  if (!frequency) return [];
+  
+  try {
+    // If it's already an array, return it
+    if (Array.isArray(frequency)) {
+      return frequency.map(f => {
+        // If the item is a stringified array, parse it
+        if (typeof f === 'string' && f.startsWith('[')) {
+          try {
+            const parsed = JSON.parse(f);
+            return Array.isArray(parsed) ? parsed[0] : parsed;
+          } catch {
+            return f;
+          }
+        }
+        return f;
+      }).flat();
+    }
+    
+    // If it's a string, try to parse it
+    if (typeof frequency === 'string') {
+      try {
+        const parsed = JSON.parse(frequency);
+        return Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        return [frequency];
+      }
+    }
+    
+    return [frequency];
+  } catch {
+    return [];
+  }
+}
+
+function handleEditOrdonnance(row: any) {
+  // Set edit mode
+  isEditMode.value = true;
+  currentEditId.value = row.id;
+  
+  // Set the prescription medicament_id
+  prescription.value.medicament_id = row.medicament_id;
+  
+  // Clean and set frequency data
+  const cleanedFrequency = cleanFrequencyData(row.frequency);
+  
+  // Populate the modal form with existing values
+  modalForm.value = {
+    unit: row.unit || "",
+    administrationMode: row.administration_mode || "",
+    frequency: cleanedFrequency,
+    durationValue: row.duration_value || null,
+    durationUnit: row.duration_unit || "",
+    comment: row.commentaire || "",
+    contraindications: row.contraindications || [],
+    treatmentContext: row.treatment_context || "",
+    applicationSite: row.application_site || "",
+    specialInstructions: row.special_instructions || "",
+  };
+
+  // Set the dose values
+  doseValues.value = {
+    Matin: row.matin || 0,
+    Midi: row.midi || 0,
+    Soir: row.soir || 0,
+    "Au coucher": row.au_coucher || 0,
+  };
+
+  // Show the modal
+  showModal.value = true;
+}
+
+async function handleSaveModalData() {
+  // Prepare data to send
+  const ordonnanceData = {
+    consultation_id: prescription.value.consultation_id,
+    medicament_id: prescription.value.medicament_id,
+    commentaire: modalForm.value.comment || "",
+    administration_mode: modalForm.value.administrationMode,
+    duration_value: modalForm.value.durationValue || null,
+    duration_unit: modalForm.value.durationUnit || null,
+    frequency: modalForm.value.frequency,
+    contraindications: modalForm.value.contraindications || [],
+    matin: doseValues.value.Matin || 0,
+    midi: doseValues.value.Midi || 0,
+    soir: doseValues.value.Soir || 0,
+    au_coucher: doseValues.value["Au coucher"] || 0,
+    treatment_context: modalForm.value.treatmentContext || "",
+    application_site: modalForm.value.applicationSite || "",
+  };
+
+  try {
+    if (isEditMode.value && currentEditId.value) {
+      // Update existing ordonnance
+      await ordonnanceClient.update(currentEditId.value, ordonnanceData);
+      ElMessage.success("Ordonnance mise à jour avec succès.");
+    } else {
+      // Create new ordonnance
+      await ordonnanceClient.add(ordonnanceData);
+      ElMessage.success("Médicament ajouté à l'ordonnance avec succès.");
+    }
+
+    // Refresh ordonnance list
+    ordonnance.value = await getOrdonnance();
+
+    // Reset fields and close modal
+    prescription.value.medicament_id = "";
+    resetModalForm();
+    showModal.value = false;
+    isEditMode.value = false;
+    currentEditId.value = null;
+
+  } catch (error) {
+    ElMessage.error("Une erreur s'est produite lors de l'enregistrement des données.");
+    console.error(error);
+  }
+}
 
 const timingOptions: { label: "Matin" | "Midi" | "Soir" | "Au coucher"; icon: string }[] = [
   { label: "Matin", icon: "☀️" },
@@ -290,11 +447,6 @@ const applicationSiteOptions = [
   "Zones sèches uniquement"
 ];
 
-function handleSaveModalData() {
-  showModal.value = false;
-  setOrdonnance();
-}
-
 const doseValues = ref<Record<"Matin" | "Midi" | "Soir" | "Au coucher", number>>({
   Matin: 0,
   Midi: 0,
@@ -346,14 +498,6 @@ function addContraindication(newContraindication: string) {
   }
 }
 
-function handleShowModal() {
-  if (prescription.value.medicament_id) {
-    showModal.value = true;
-  } else {
-    ElMessage.error('Veuillez sélectionner un médicament.');
-  }
-}
-
 const loadingMedicament = ref(false);
 
 async function loadMedicaments(query: string) {
@@ -374,81 +518,48 @@ async function loadMedicaments(query: string) {
 <template>
   <div class="container">
     <el-form label-position="top">
-      <el-row :gutter="10">
-        <el-col :span="19">
-          <!-- <el-form-item label="Médicament">
-            <el-select class="w-full" v-model="prescription.medicament_id" 
+      <el-row :gutter="10" class="medicament-row">
+        <el-col :span="19" class="input-col">
+          <el-form-item label="Médicament" class="medicament-form-item">
+            <el-select
+              class="w-full"
+              v-model="prescription.medicament_id"
               placeholder="Rechercher un médicament"
-              filterable allow-create>
-              <el-option v-for="m in filteredMedicaments" :key="m.id" :value="m.id" :label="m.nom" />
-            </el-select>
-          </el-form-item> -->
-          <el-form-item label="Médicament">
-              <el-select
-                class="w-full"
-                v-model="prescription.medicament_id"
-                placeholder="Rechercher un médicament"
-                filterable
-                remote
-                reserve-keyword
-                :remote-method="loadMedicaments"
-                :loading="loadingMedicament"
-              >
-                <el-option
-                  v-for="m in medicaments"
-                  :key="m.id"
-                  :value="m.id"
-                  :label="m.nom"
-                />
-              </el-select>
-          </el-form-item>
-
-        </el-col>
-        <!-- <el-col :span="8">
-          <el-form-item label="Laboratoire">
-            <el-select v-model="prescription.laboratoire" placeholder="Sélectionner laboratoire" filterable allow-create >
-              <el-option v-for="laboratoire in laboratoire_list" :key="laboratoire.id" :value="laboratoire.name"
-                :label="laboratoire.name" />
+              filterable
+              remote
+              reserve-keyword
+              :remote-method="loadMedicaments"
+              :loading="loadingMedicament"
+            >
+              <el-option
+                v-for="m in medicaments"
+                :key="m.id"
+                :value="m.id"
+                :label="m.nom"
+              />
             </el-select>
           </el-form-item>
-        </el-col> -->
-        <el-col :span="4">
-          <el-form style="display: flex; gap: 10px;">
-            <el-form-item label=" &nbsp ">
-              <el-button type="primary" size="small" @click="handleShowModal" class="btn-gear">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-gear"
-                  viewBox="0 0 16 16">
-                  <path
-                    d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0" />
-                  <path
-                    d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115z" />
-                </svg>
-              </el-button>
-            </el-form-item>
+        </el-col>
+        <el-col :span="4" class="button-col">
+          <div class="button-container">
+            <el-button type="primary" size="small" @click="handleShowModal" class="btn-gear">
+              <img src="https://clickdoc.webredirect.org/public/Svg/settings.svg" alt="Settings Icon" />
+            </el-button>
 
-            <el-form-item label=" &nbsp ">
-              <el-button type="primary" size="small" @click="handleShowContent" class="btn-add">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                  class="bi bi-plus-circle" viewBox="0 0 16 16">
-                  <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
-                  <path
-                    d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4" />
-                </svg>
-              </el-button>
-            </el-form-item>
+            <el-button type="primary" size="small" @click="handleShowContent" class="btn-add">
+              <img src="https://clickdoc.webredirect.org/public/Svg/plus.svg" alt="Settings Icon" />
+            </el-button>
 
-            <el-form-item label=" &nbsp ">
-              <el-button @click="async ()=>{await setOrdonnance()}" class="btn btn-sm btn-block background-clickdoc"
-                type="button">
-                <el-icon>
-                  <Select />
-                </el-icon>
-              </el-button>
-            </el-form-item>
-          </el-form>
+            <el-button @click="async ()=>{await setOrdonnance()}" class="btn btn-sm btn-block background-clickdoc validate-btn" type="button">
+              <el-icon>
+                <Select />
+              </el-icon>
+            </el-button>
+          </div>
+          
         </el-col>
 
-        <el-col :span="24" v-if="showContent">
+        <el-col :span="24" v-if="showContent" style="margin-top: 10px;">
           <el-form-item>
             <el-input v-model="inputMedicament" placeholder="Ajoutez un Medicament">
               <template #append>
@@ -468,24 +579,41 @@ async function loadMedicaments(query: string) {
         {{ scope.row.medicament }}
       </template>
     </el-table-column>
-    <el-table-column label="Mode d'administration" width="220">
+    <!-- Hidden columns for data access -->
+    <el-table-column v-if="false" label="Mode d'administration" width="220">
       <template #default="scope">
         {{ scope.row.administration_mode }}
       </template>
     </el-table-column>
-    <el-table-column label="Site d'application" width="220">
+    <el-table-column v-if="false" label="Site d'application" width="220">
       <template #default="scope">
         {{ scope.row.application_site || 'Non spécifié' }}
       </template>
     </el-table-column>
-    <el-table-column label="Contexte" width="150">
+    <el-table-column v-if="false" label="Contexte" width="150">
       <template #default="scope">
         {{ scope.row.treatment_context || 'Standard' }}
       </template>
     </el-table-column>
-    <el-table-column label="Fréquence" width="150">
+    <el-table-column label="Fréquence" width="200">
       <template #default="scope">
-        {{ scope.row.frequency }}
+        <div class="frequency-tags">
+          <template v-if="cleanFrequencyData(scope.row.frequency).length > 0">
+            <el-tag 
+              v-for="(freq, index) in cleanFrequencyData(scope.row.frequency)" 
+              :key="index" 
+              type="info" 
+              class="tag-space"
+            >
+              {{ freq }}
+            </el-tag>
+          </template>
+          <template v-else>
+            <el-tag type="info" class="tag-space">
+              Non spécifié
+            </el-tag>
+          </template>
+        </div>
       </template>
     </el-table-column>
     <el-table-column label="Durée" width="150">
@@ -497,13 +625,13 @@ async function loadMedicaments(query: string) {
     <!-- Commentaire Section as Tags -->
     <el-table-column label="Commentaire" width="260">
       <template #default="scope">
-        <div v-if="Array.isArray(scope.row.commentaire)">
-          <el-tag v-for="(comment, index) in scope.row.commentaire" :key="index" type="info" class="tag-space">
-            {{ comment }}
+        <div class="comment-content">
+          <el-tag v-if="scope.row.commentaire" type="info" class="tag-space">
+            {{ scope.row.commentaire }}
           </el-tag>
-        </div>
-        <div v-else>
-          <el-tag type="info">{{ scope.row.commentaire || 'Aucun' }}</el-tag>
+          <el-tag v-else type="info" class="tag-space">
+            Aucun commentaire
+          </el-tag>
         </div>
       </template>
     </el-table-column>
@@ -521,16 +649,31 @@ async function loadMedicaments(query: string) {
       </template>
     </el-table-column>
 
-    <el-table-column width="75px">
-      <template #default="scope">
-        <el-button class="btn btn-sm btn-danger background-clickdoc" type="button"
-          @click="async ()=>{ await removeOrdonnance(scope.row.id) }">
-          <el-icon>
-            <Delete />
-          </el-icon>
-        </el-button>
-      </template>
-    </el-table-column>
+    <el-table-column width="120px" label="Actions">
+  <template #default="scope">
+    <div class="action-buttons">
+      <!-- Edit Button -->
+      <el-button 
+        size="small" 
+        type="warning" 
+        @click="handleEditOrdonnance(scope.row)"
+        class="action-btn"
+      >
+        <el-icon><Edit /></el-icon>
+      </el-button>
+      
+      <!-- Delete Button -->
+      <el-button 
+        size="small" 
+        type="danger" 
+        @click="async () => { await removeOrdonnance(scope.row.id) }"
+        class="action-btn"
+      >
+        <el-icon><Delete /></el-icon>
+      </el-button>
+    </div>
+  </template>
+</el-table-column>
   </el-table>
 </div>
 
@@ -572,6 +715,18 @@ async function loadMedicaments(query: string) {
 
       <!-- Main Form -->
       <div class="form-container">
+        <!-- Commentaire -->
+        <div class="form-group">
+          <label>Commentaire</label>
+          <el-input
+            v-model="modalForm.comment"
+            type="textarea"
+            :rows="3"
+            placeholder="Ajouter un commentaire..."
+            class="comment-textarea"
+          />
+        </div>
+
         <!-- Treatment Context -->
         <div class="form-group">
           <label>Contexte du traitement</label>
@@ -669,13 +824,66 @@ async function loadMedicaments(query: string) {
 
 
 <style scoped>
-.btn-gear , .btn-add{
-    height: 31px;
-    margin: auto;
-  }
-  .btn-add {
-    background-color:  #28a745!important;
-  }
+.medicament-row {
+  display: flex;
+  align-items: end;
+  width: 100%;
+  gap: 3%;
+}
+
+.input-col {
+  display: flex;
+  align-items: center;
+}
+
+.medicament-form-item {
+  width: 100%;
+  margin-bottom: 0;
+}
+
+.button-col {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.button-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+}
+
+.btn-gear, .btn-add, .validate-btn {
+  height: 35px !important;
+  min-height: 35px;
+  width: 35px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn-gear img, .btn-add img {
+  filter: brightness(0) saturate(100%) invert(100%) sepia(2%) saturate(148%) hue-rotate(35deg) brightness(113%) contrast(98%);
+  width: 16px;
+  height: 16px;
+}
+
+.btn-add {
+  background-color: #28a745!important;
+}
+
+.validate-btn {
+  background-color: var(--el-color-primary) !important;
+  color: white;
+}
+
+.validate-btn .el-icon {
+  font-size: 16px;
+}
+
 .custom-dialog :deep(.el-dialog) {
   border-radius: 12px;
   max-width: 95vw;
@@ -863,6 +1071,60 @@ async function loadMedicaments(query: string) {
 
 .tag-space {
   margin: 2px;
+}
+
+.frequency-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.comment-textarea {
+  width: 100%;
+}
+
+.comment-textarea :deep(.el-textarea__inner) {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.comment-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.button-form-item {
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+}
+
+.btn-gear, .btn-add, .validate-btn {
+  height: 35px !important;
+  min-height: 35px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-gear img, .btn-add img {
+  filter: brightness(0) saturate(100%) invert(100%) sepia(2%) saturate(148%) hue-rotate(35deg) brightness(113%) contrast(98%);
+  width: 16px;
+  height: 16px;
+}
+
+.btn-add {
+  background-color: #28a745!important;
+}
+
+.validate-btn {
+  background-color: var(--el-color-primary) !important;
+  color: white;
+}
+
+.validate-btn .el-icon {
+  font-size: 16px;
 }
 
 </style>

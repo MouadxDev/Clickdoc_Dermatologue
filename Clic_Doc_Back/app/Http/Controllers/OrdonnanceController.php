@@ -43,7 +43,7 @@ class OrdonnanceController extends Controller
          $validated = $request->validate([
              'consultation_id' => 'required|integer',
              'medicament_id' => 'required|integer',
-             'commentaire' => 'nullable|array',
+             'commentaire' => 'nullable|string',
              'administration_mode' => 'nullable|string',
              'duration_value' => 'nullable|integer',
              'duration_unit' => 'nullable|string',
@@ -95,7 +95,7 @@ class OrdonnanceController extends Controller
         $validated = $request->validate([
             'consultation_id' => 'required|integer',
             'medicament_id' => 'required|integer',
-            'commentaire' => 'nullable|array',
+            'commentaire' => 'nullable|string',
             'administration_mode' => 'nullable|string',
             'duration_value' => 'nullable|integer',
             'duration_unit' => 'nullable|string',

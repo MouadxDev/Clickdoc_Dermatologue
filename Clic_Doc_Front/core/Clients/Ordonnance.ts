@@ -72,4 +72,18 @@ export class Ordonnance {
         }
     }
 
+    public async update(id:number, request:any) : Promise<IResponse> {
+        try {
+            const response = await this.client.put("/"+id, request)
+            return response.data
+        }
+        catch(error:any) {
+            ElMessage.error("Erreur lors de la mise à jour des données")
+            return {
+                status:error.status,
+                data:error.response.data
+            }
+        }
+    }
+
 }

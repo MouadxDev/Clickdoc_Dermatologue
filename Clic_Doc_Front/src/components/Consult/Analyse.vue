@@ -7,6 +7,7 @@ import { Demande } from '../../../core/Clients/DemandeAnalyse';
 import { Analyses } from '../../../core/Clients/Analyses';
 
 import ENV from '../../../core/env'
+import { ElMessage } from 'element-plus'
 
 const consult = useConsultStore();
 
@@ -21,6 +22,8 @@ const analyseClient = new Analyses()
 const demandeClient = new Demande()
 
 const searchTerm: Ref<string> = ref('');
+const showContent = ref(false);
+const inputAnalyse = ref("");
 
 const filteredAnalyses = computed(() => {
     return analyses.value.filter((analyse: any) =>
@@ -52,34 +55,77 @@ onBeforeMount(async ()=>{
     demandes.value = await getDemande()
 })
 
+async function addMore() {
+    const analyseName = inputAnalyse.value;
 
+    if (!analyseName) {
+        ElMessage.error("Veuillez entrer un nom d'analyse.");
+        return;
+    }
+
+    const dataToSend = {
+        libelle: analyseName,
+    };
+
+    try {
+        await analyseClient.add(dataToSend);
+        inputAnalyse.value = "";
+        ElMessage.success("Analyse ajoutée avec succès.");
+        analyses.value = await analyseClient.getAll();
+    } catch (error) {
+        ElMessage.error("Une erreur s'est produite lors de l'ajout de l'analyse.");
+        console.error(error);
+    }
+}
+
+const handleShowContent = () => {
+    showContent.value = !showContent.value;
+};
 
 </script>
 <template>
     <div class="container">
         <el-form label-position="top">
-            <el-row :gutter="10" >
-                <el-col :span="21">
-                    <el-form-item label="Analyse">
-                    <el-select
-                        class="w-full"
-                        v-model="demande.analyse_id"
-                        placeholder="Rechercher une analyse"
-                        filterable
-                    >
-                        <el-option
-                            v-for="m in filteredAnalyses"
-                            :key="m.id"
-                            :value="m.id"
-                            :label="m.libelle"
-                            @click="async ()=>{await setDemande()}"
-                        />
-                    </el-select>
+            <el-row :gutter="10" class="analyse-row">
+                <el-col :span="19" class="input-col">
+                    <el-form-item label="Analyse" class="analyse-form-item">
+                        <el-select
+                            class="w-full"
+                            v-model="demande.analyse_id"
+                            placeholder="Rechercher une analyse"
+                            filterable
+                        >
+                            <el-option
+                                v-for="m in filteredAnalyses"
+                                :key="m.id"
+                                :value="m.id"
+                                :label="m.libelle"
+                                @click="async ()=>{await setDemande()}"
+                            />
+                        </el-select>
                     </el-form-item>
                 </el-col>
-                <el-col :span="3">
-                    <el-form-item label=" &nbsp ">
-                        <button @click="async ()=>{await setDemande()}" class="btn btn-sm btn-block background-clickdoc" type="button" > <el-icon><Select /></el-icon> </button>
+                <el-col :span="4" class="button-col">
+                    <div class="button-container">
+                        <el-button type="primary" size="small" @click="handleShowContent" class="btn-add">
+                            <img src="https://clickdoc.webredirect.org/public/Svg/plus.svg" alt="Add Icon" />
+                        </el-button>
+
+                        <el-button @click="async ()=>{await setDemande()}" class="btn btn-sm btn-block background-clickdoc validate-btn" type="button">
+                            <el-icon><Select /></el-icon>
+                        </el-button>
+                    </div>
+                </el-col>
+            </el-row>
+
+            <el-row v-if="showContent">
+                <el-col :span="24">
+                    <el-form-item>
+                        <el-input v-model="inputAnalyse" placeholder="Ajouter une analyse">
+                            <template #append>
+                                <el-button size="small" @click="addMore()">Ajouter</el-button>
+                            </template>
+                        </el-input>
                     </el-form-item>
                 </el-col>
             </el-row>
@@ -111,3 +157,122 @@ onBeforeMount(async ()=>{
         </div>
     </div>
 </template>
+
+<style scoped>
+
+.analyse-row {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.input-col {
+    display: flex;
+    align-items: end;
+    padding-right: 12px;
+}
+
+.analyse-form-item {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.analyse-form-item :deep(.el-form-item__label) {
+    padding-bottom: 4px;
+    font-weight: 500;
+}
+
+.button-col {
+    display: flex;
+    align-items: end;
+    justify-content: flex-end;
+}
+
+.button-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 100%;
+    padding-bottom: 2px;
+}
+
+.btn-add, .validate-btn {
+    height: 35px !important;
+    min-height: 35px;
+    width: 35px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-add:hover, .validate-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-add img {
+    filter: brightness(0) saturate(100%) invert(100%) sepia(2%) saturate(148%) hue-rotate(35deg) brightness(113%) contrast(98%);
+    width: 16px;
+    height: 16px;
+}
+
+.btn-add {
+    background-color: #28a745!important;
+}
+
+.validate-btn {
+    background-color: var(--el-color-primary) !important;
+    color: white;
+}
+
+.validate-btn .el-icon {
+    font-size: 16px;
+}
+
+/* Input field styling */
+.el-input {
+    margin-top: 8px;
+}
+
+.el-input :deep(.el-input__wrapper) {
+    border-radius: 6px;
+}
+
+.el-input :deep(.el-input-group__append) {
+    padding: 0 12px;
+}
+
+.el-input :deep(.el-input-group__append .el-button) {
+    margin: 0;
+    height: 100%;
+    border-radius: 0 6px 6px 0;
+}
+
+/* Print button styling */
+.text-right {
+    margin-top: 16px;
+}
+
+.btn-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-link:hover {
+    background-color: #f8f9fa;
+}
+
+.btn-link .el-icon {
+    font-size: 16px;
+}
+</style>
