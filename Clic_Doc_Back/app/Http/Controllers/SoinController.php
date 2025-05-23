@@ -53,13 +53,26 @@ class SoinController extends Controller
      */
     public function store(Request $request)
     {
-        $soin = new Soin();
-        $soin -> consultation_id = request()->consultation_id;
-        $soin -> acte_id = request()->acte_id;
-        $soin -> nbr_sceances = request()->nbr_sceances;
-        $soin -> save();
+        // Create a new acte if needed
+        $acteId = $request->acte_id;
+        $entityId = auth()->user()->entity_id;
 
-        return $soin;
+        if (!$acteId && $request->newitem) {
+            $newActe = new ActeMedical();
+            $newActe->libelle = $request->newitem;
+            $newActe->entity_id = $entityId;  
+            $newActe->save();
+            $acteId = $newActe->id;
+        }
+    
+        // Now store the soin
+        $soin = new Soin();
+        $soin->consultation_id = $request->consultation_id;
+        $soin->acte_id = $acteId;
+        $soin->nbr_sceances = $request->nbr_sceances;
+        $soin->save();
+    
+        return response()->json($soin);
     }
 
     /**

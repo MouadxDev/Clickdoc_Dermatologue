@@ -20,14 +20,14 @@
     }
 
     .a5-page {
-      background-image: url("https://clickdoc.webredirect.org/public/doc/ordonnance_01.jpg");
+      /* background-image: url("https://clickdoc.webredirect.org/public/doc/ordonnance_01.jpg"); */
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
       width: 147mm;
       height: 205mm;
       position: relative;
-      padding: 20mm; /* adjust as needed */
+      padding: 15mm; 
       box-sizing: border-box;
     }
 
@@ -63,14 +63,23 @@
       }
     }
   </style>
+
+<?php if(isset($branding_file)): ?>
+<style>
+  .a5-page {
+     background-image: url('<?php echo e($branding_file, false); ?>');
+  }
+</style>
+<?php endif; ?>
+
 </head>
 <body onload="window.print()">
   <section class="a5-page">
     <div class="m-4 relative z-10" style="margin: 1rem 0.4in;">
-        <div class="text-center" style="padding-top: 100px">
+        <div class="text-center" style="padding-top: 120px">
             <p style="font-size: 0.8rem;"> <?php echo e(date('d/m/Y'), false); ?></p>
-          <h1 class="title text-[#354b88] pt-[10px] " >Analyse</h1>
-          <h2 class="text-[15px] font-bold ">
+          
+          <h2 class="text-[15px] font-bold pt-[10px]">
             <?php if(isset($patient)): ?>
               <?php if($patient->sex == 'M'): ?> M.
               <?php elseif($patient->sex == 'F'): ?> Mme
@@ -83,14 +92,17 @@
         </div>
       </div>
       
-    <div class="analyses-container">
-      <?php $__currentLoopData = $analyses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-        <div class="analyses-item">
-          <?php echo e($item->libelle, false); ?>
+      <div class="analyses-container">
+        <ol style="padding-left: 20px; list-style-type: decimal;">
+          <?php $__currentLoopData = $analyses; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <li class="py-1">
+              <?php echo e($item->libelle, false); ?>
 
-        </div>
-      <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-    </div>
+            </li>
+          <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        </ol>
+      </div>
+
   </section>
 </body>
 </html>

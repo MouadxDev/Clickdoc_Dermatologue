@@ -42,16 +42,17 @@ async function requestNotificationPermission() {
   // }
 }
 
-async function requestAudioPermission() {
+async function requestAudioPermission(retryInterval = 900000) { // 15 minutes in milliseconds
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach((track) => track.stop()); // Close the stream after testing
+    stream.getTracks().forEach((track) => track.stop());
     console.log('Audio permission granted.');
   } catch (error) {
-    console.warn('Audio permission denied. Retrying...');
-    await requestAudioPermission(); // Retry until permission is granted
+    console.warn(`Audio permission denied. Retrying in ${retryInterval / 60000} minutes...`);
+    setTimeout(() => requestAudioPermission(retryInterval), retryInterval);
   }
 }
+
 
 // Request permissions on load
 onBeforeMount(async () => {

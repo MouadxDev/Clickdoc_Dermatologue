@@ -53,6 +53,18 @@ class ExamenPhysique extends Controller
     public function update(Request $request, string $id)
     {
         $ep = EP::find($id);
+        $ep->respiratory_system = $request->sys1; 
+        $ep->cardiovascular_system = $request->sys2;
+        $ep->neurological_system = $request->sys3;
+        $ep->musculoskeletal_system = $request->sys4;
+        $ep->gastrointestinal_system = $request->sys5;
+        $ep->genitourinary_system = $request->sys6;
+        $ep->endocrine_system = $request->sys7;
+        $ep->lymphatic_system = $request->sys8;
+        $ep->hematologic_system = $request->sys9;
+        $ep->cutaneous_system = $request->sys10;
+        $ep->auditory_system = $request->sys11;
+        $ep->visual_system = $request->sys12;
         $ep -> hair = request()->hair;
         $ep -> nails = request()->nails;
         $ep -> face = request()->face;

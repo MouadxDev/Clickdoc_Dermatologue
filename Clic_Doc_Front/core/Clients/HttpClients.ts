@@ -1,35 +1,39 @@
-import axios from "axios"
+import axios, { AxiosInstance } from "axios";
 import { useAuthStore } from "../Data/stores/auth";
-import { storeToRefs } from "pinia";
 
 export class httpClient {
+  private client: AxiosInstance;
 
-    public baseUrl : string ;
-    private authStore = storeToRefs(useAuthStore());
-    private config = {
-        headers:{
-            Authorization: `Bearer ${this.authStore.token.value}`
-        }
-    }
+  constructor(baseUrl: string) {
+    this.client = axios.create({
+      baseURL: baseUrl,
+    });
 
-    public constructor(baseUrl:string){
-        this.baseUrl = baseUrl
-    }
+    // Request interceptor to attach token dynamically
+    this.client.interceptors.request.use((config) => {
+      const authStore = useAuthStore();
+      const token = authStore.token;  // direct reactive state access
+      if (token) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    }, (error) => Promise.reject(error));
+  }
 
-    public async post(url:string,parameters:any){
-        return await axios.post(this.baseUrl+url,parameters,this.config);
-    }
+  public get(url: string) {
+    return this.client.get(url);
+  }
 
-    public async put(url:string,parameters:any){
-        return await axios.put(this.baseUrl+url,parameters,this.config);
-    }
+  public post(url: string, data: any) {
+    return this.client.post(url, data);
+  }
 
-    public async get(url:string){
-        return await axios.get(this.baseUrl+url,this.config);
-        
-    }
+  public put(url: string, data: any) {
+    return this.client.put(url, data);
+  }
 
-    public async delete(url:string){
-        return await axios.delete(this.baseUrl+url,this.config)
-    }
- }
+  public delete(url: string) {
+    return this.client.delete(url);
+  }
+}

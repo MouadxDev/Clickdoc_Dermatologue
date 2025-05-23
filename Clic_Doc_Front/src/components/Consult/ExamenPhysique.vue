@@ -1,280 +1,295 @@
 <script setup lang="ts">
-    import { Ref , onBeforeMount, ref } from "vue";
-    import {useConsultStore} from "../../../core/Data/stores/consultation"
-    import { ExamenPhysique } from '../../../core/Clients/Examen';
+import { Ref, onBeforeMount, ref, computed } from "vue";
+import { useConsultStore } from "../../../core/Data/stores/consultation";
+import { ExamenPhysique } from '../../../core/Clients/Examen';
+import { useAuthStore } from "../../../core/Data/stores/auth";
+import { ConstFiles } from '../../../core/Clients/ConstFiles';
 
-    const consult = useConsultStore();
-    const examenClient = new ExamenPhysique()
+const consult = useConsultStore();
+const examenClient = new ExamenPhysique();
+const constClient = new ConstFiles();
+const authStore = useAuthStore();
+const specialty = authStore.user.specialty;
 
-    const data_visage = [
-        {label:"Acné",value:"Acné"},
-        {label:"Rosacée",value:"Rosacée"},
-        {label:"Eczéma",value:"Eczéma"},
-        {label:"Dermatite de contact",value:"Dermatite de contact"},
-        {label:"Psoriasis Urticaire Verrues",value:"Psoriasis Urticaire Verrues"},
-        {label:"Herpès labial",value:"Herpès labial"},
-        {label:"Taches de vieillesse",value:"Taches de vieillesse"},
-        {label:"Taches de rousseur",value:"Taches de rousseur"},
-        {label:"Milium Angiome stellaire",value:"Milium Angiome stellaire"},
-        {label:"Kératose actinique",value:"Kératose actinique"},
-        {label:"Comédons",value:"Comédons"},
-        {label:"Pétéchies",value:"Pétéchies"},
-        {label:"Hyperpigmentation",value:"Hyperpigmentation"},
-        {label:"Hypopigmentation",value:"Hypopigmentation"},
-        {label:"Acné (comédons, papules, pustules, nodules)",value:"Acné (comédons, papules, pustules, nodules)" },
-        {label:"Angiomes",value:"Angiomes" },
-        {label:"Chéilite (lèvres sèches, fissurées, enflammées)",value:"Chéilite (lèvres sèches, fissurées, enflammées)" },
-        {label:"Couperose (rougeurs, petits vaisseaux visibles)",value:"Couperose (rougeurs, petits vaisseaux visibles)" },
-        {label:"Dépigmentation (taches blanches)",value:"Dépigmentation (taches blanches)" },
-        {label:"Dyschromie (taches foncées ou claires)",value:"Dyschromie (taches foncées ou claires)" },
-        {label:"Érythème facial (rougeurs diffuses)",value:"Érythème facial (rougeurs diffuses)" },
-        {label:"Herpès labial (vésicules, croûtes)",value:"Herpès labial (vésicules, croûtes)" },
-        {label:"Hyperpigmentation (mélasma, taches brunes)",value:"Hyperpigmentation (mélasma, taches brunes)" },
-        {label:"Hypopigmentation (vitiligo, pityriasis alba)",value:"Hypopigmentation (vitiligo, pityriasis alba)" },
-        {label:"Lésions croûteuses",value:"Lésions croûteuses" },
-        {label:"Lichenification (épaississement de la peau)",value:"Lichenification (épaississement de la peau)" },
-        {label:"Macules hypo/hyperpigmentées",value:"Macules hypo/hyperpigmentées" },
-        {label:"Œdème facial",value:"Œdème facial" },
-        {label:"Papules (petites bosses rouges)",value:"Papules (petites bosses rouges)" },
-        {label:"Pétéchies (petites taches rouges non blanchissantes)",value:"Pétéchies (petites taches rouges non blanchissantes)" },
-        {label:"Pityriasis rosé (plaques rosées)",value:"Pityriasis rosé (plaques rosées)" },
-        {label:"Prurit facial (démangeaisons)",value:"Prurit facial (démangeaisons)" },
-        {label:"Pustules (lésions remplies de pus)",value:"Pustules (lésions remplies de pus)" },
-        {label:"Squames (peau qui pèle)",value:"Squames (peau qui pèle)" },
-        {label:"Télangiectasies (petits vaisseaux dilatés)",value:"Télangiectasies (petits vaisseaux dilatés)" },
-        {label:"Ulcérations cutanées",value:"Ulcérations cutanées" },
-        {label:"Xanthélasma (plaques jaunâtres autour des yeux)",value:"Xanthélasma (plaques jaunâtres autour des yeux)" },
-        {label:"Xérose cutanée (sécheresse cutanée)",value:"Xérose cutanée (sécheresse cutanée)" },
+const examen: Ref<any> = ref({});
 
-    ]
-    const data_corps  = [
-        {label:"Eczéma",value:"Eczéma"},
-        {label:"Dermatite de contact",value:"Dermatite de contact"},
-        {label:"Psoriasis",value:"Psoriasis"},
-        {label:"Urticaire",value:"Urticaire"},
-        {label:"Verrues",value:"Verrues"},
-        {label:"Molluscum contagiosum",value:"Molluscum contagiosum"},
-        {label:"Pityriasis rosé de Gibert",value:"Pityriasis rosé de Gibert"},
-        {label:"Impétigo",value:"Impétigo"},
-        {label:"Mycose de la peau (dermatophytose)",value:"Mycose de la peau (dermatophytose)"},
-        {label:"Infections bactériennes de la peau",value:"Infections bactériennes de la peau"},
-        {label:"Cellulite",value:"Cellulite"},
-        {label:"Furoncles et anthrax",value:"Furoncles et anthrax"},
-        {label:"Folliculite",value:"Folliculite"},
-        {label:"Lipome",value:"Lipome"},
-        {label:"Kystes épidermiques",value:"Kystes épidermiques"},
-        {label:"Hidradénite suppurée",value:"Hidradénite suppurée"},
-        {label:"Pétéchies",value:"Pétéchies"},
-        {label:"Érythème polymorphe",value:"Érythème polymorphe"},
-        {label:"Syndrome de Stevens-Johnson",value:"Syndrome de Stevens-Johnson"},
-        {label:'Acrochordons (verrues filiformes)',value:'Acrochordons (verrues filiformes)'},
-        {label:'Angiomes',value:'Angiomes'},
-        {label:'Bulle (lésion remplie de liquide clair)',value:'Bulle (lésion remplie de liquide clair)'},
-        {label:'Cicatrices hypertrophiques',value:'Cicatrices hypertrophiques'},
-        {label:'Crevasses cutanées',value:'Crevasses cutanées'},
-        {label:'Croûtes hémorragiques',value:'Croûtes hémorragiques'},
-        {label:'Cyanose cutanée',value:'Cyanose cutanée'},
-        {label:'Dépigmentation',value:'Dépigmentation'},
-        {label:'Dermographisme (rougeurs après frottement)',value:'Dermographisme (rougeurs après frottement)'},
-        {label:'Érosion cutanée',value:'Érosion cutanée'},
-        {label:'Érythème généralisé',value:'Érythème généralisé'},
-        {label:'Escarres (ulcérations sur zones d’appui)',value:'Escarres (ulcérations sur zones d’appui)'},
-        {label:'Excoriations (lésions dues au grattage)',value:'Excoriations (lésions dues au grattage)'},
-        {label:'Fissures cutanées',value:'Fissures cutanées'},
-        {label:'Hématomes spontanés',value:'Hématomes spontanés'},
-        {label:'Hyperhidrose (transpiration excessive)',value:'Hyperhidrose (transpiration excessive)'},
-        {label:'Hyperkératose (épaississement de la peau)',value:'Hyperkératose (épaississement de la peau)'},
-        {label:'Hyperséborrhée',value:'Hyperséborrhée'},
-        {label:'Hypopigmentation (dépigmentation partielle)',value:'Hypopigmentation (dépigmentation partielle)'},
-        {label:'Lésions maculaires (taches rouges, brunes, blanches)',value:'Lésions maculaires (taches rouges, brunes, blanches)'},
-        {label:'Lésions nodulaires',value:'Lésions nodulaires'},
-        {label:'Lichenification (épaississement de la peau avec stries)',value:'Lichenification (épaississement de la peau avec stries)'},
-        {label:'Macules érythémateuses',value:'Macules érythémateuses'},
-        {label:'Nodules sous-cutanés',value:'Nodules sous-cutanés'},
-        {label:'Papules (petites bosses rouges)',value:'Papules (petites bosses rouges)'},
-        {label:'Pétéchies (petites taches rouges)',value:'Pétéchies (petites taches rouges)'},
-        {label:'Phlyctènes (ampoules)',value:'Phlyctènes (ampoules)'},
-        {label:'Pigmentation irrégulière',value:'Pigmentation irrégulière'},
-        {label:'Plaques érythémateuses',value:'Plaques érythémateuses'},
-        {label:'Prurit généralisé ou localisé',value:'Prurit généralisé ou localisé'},
-        {label:'Pustules (lésions purulentes)',value:'Pustules (lésions purulentes)'},
-        {label:'Squames épaisses ou fines',value:'Squames épaisses ou fines'},
-        {label:'Stries atrophiques (vergetures)',value:'Stries atrophiques (vergetures)'},
-        {label:'Télangiectasies (dilatation des petits vaisseaux)',value:'Télangiectasies (dilatation des petits vaisseaux)'},
-        {label:'Tumeurs cutanées bénignes ou malignes',value:'Tumeurs cutanées bénignes ou malignes'},
-        {label:'Ulcérations cutanées',value:'Ulcérations cutanées'},
-        {label:'Urticaire (papules rouges prurigineuses)',value:'Urticaire (papules rouges prurigineuses)'},
-        {label:'Xanthomes (dépôts lipidiques jaunâtres)',value:'Xanthomes (dépôts lipidiques jaunâtres)'},
-        {label:'Xérose cutanée (sécheresse extrême)',value:'Xérose cutanée (sécheresse extrême)'},
+// First logic (specialty === 1) - Individual body parts
+const data_visage = ref<{ label: string; value: string }[]>([]);
+const data_corps = ref<{ label: string; value: string }[]>([]);
+const data_ongles = ref<{ label: string; value: string }[]>([]);
+const data_cheveux = ref<{ label: string; value: string }[]>([]);
 
-    ]
-    const data_ongles = [
-        {label:"Onychomycose",value:"Onychomycose"},
-        {label:"Paronychie",value:"Paronychie"},
-        {label:"Onycholyse",value:"Onycholyse"},
-        {label:"Onychogryphose",value:"Onychogryphose"},
-        {label:"Onychomadèse",value:"Onychomadèse"},
-        {label:"Leuconychie",value:"Leuconychie"},
-        {label:"Pachyonychie",value:"Pachyonychie"},
-        {label:"Onychorrhexie",value:"Onychorrhexie"},
-        {label:"Onychoschizie",value:"Onychoschizie"},
-        {label:"Onychomadesis",value:"Onychomadesis"},
-        {label:"Koïlonychie",value:"Koïlonychie"},
-        {label:"Onychauxis",value:"Onychauxis"},
-        {label:"Onychite",value:"Onychite"},
-        {label:"Hématome sous-unguéal",value:"Hématome sous-unguéal"},
-        {label:"Onychocryptose (ongle incarné)",value:"Onychocryptose (ongle incarné)"},
-        {label:"Onychophagie (rongement des ongles)",value:"Onychophagie (rongement des ongles)"},
-        {label:"Onychotillomanie (arrachement compulsif des ongles)",value:"Onychotillomanie (arrachement compulsif des ongles)"},
-        {label:"Trou d'épingle",value:"Trou d'épingle"},
-        {label:"Lignes de Beau Pitting",value:"Lignes de Beau Pitting"},
-        {label:"Chromonychie (coloration anormale)",value:"Chromonychie (coloration anormale)"},
-        {label:"Déformation de l’ongle",value:"Déformation de l’ongle"},
-        {label:"Dystrophie unguéale (altération de la surface de l’ongle)",value:"Dystrophie unguéale (altération de la surface de l’ongle)"},
-        {label:"Hématome sous-unguéal",value:"Hématome sous-unguéal"},
-        {label:"Hippocratisme digital (ongles en verre de montre)",value:"Hippocratisme digital (ongles en verre de montre)"},
-        {label:"Hyperkératose sous-unguéale",value:"Hyperkératose sous-unguéale"},
-        {label:"Koïlonychie (ongles en cuillère)",value:"Koïlonychie (ongles en cuillère)"},
-        {label:"Leuconychie (taches blanches)",value:"Leuconychie (taches blanches)"},
-        {label:"Lignes de Beau (dépressions transversales)",value:"Lignes de Beau (dépressions transversales)"},
-        {label:"Mélanonychie (stries pigmentées)",value:"Mélanonychie (stries pigmentées)"},
-        {label:"Mycose des ongles (onychomycose)",value:"Mycose des ongles (onychomycose)"},
-        {label:"Ongles cassants",value:"Ongles cassants"},
-        {label:"Ongles fragiles",value:"Ongles fragiles"},
-        {label:"Ongles striés",value:"Ongles striés"},
-        {label:"Onycholyse (décollement de l’ongle)",value:"Onycholyse (décollement de l’ongle)"},
-        {label:"Onychomadèse (chute soudaine de l’ongle)",value:"Onychomadèse (chute soudaine de l’ongle)"},
-        {label:"Onychophagie (rongement des ongles)",value:"Onychophagie (rongement des ongles)"},
-        {label:"Onychorrhexie (ongles fissurés)",value:"Onychorrhexie (ongles fissurés)"},
-        {label:"Pachyonychie (épaississement anormal)",value:"Pachyonychie (épaississement anormal)"},
-        {label:"Panaris (infection péri-unguéale)",value:"Panaris (infection péri-unguéale)"},
-        {label:"Psoriasis unguéal",value:"Psoriasis unguéal"},
-        {label:"Trachyonychie (surface rugueuse de l’ongle)",value:"Trachyonychie (surface rugueuse de l’ongle)"},
+const loadingVisage = ref(false);
+const loadingCorps = ref(false);
+const loadingOngles = ref(false);
+const loadingCheveux = ref(false);
 
+// Second logic (specialty === 2) - Body systems
+const systemOptions: Ref<{ label: string; value: string }[]>[] = Array.from(
+  { length: 12 },
+  () => ref([])
+);
 
-        ]
-    const data_cheveux= [
-        {label:"Alopécie",value:"Alopécie"},
-        {label:"Pellicules (dermatite séborrhéique)",value:"Pellicules (dermatite séborrhéique)"},
-        {label:"Calvitie (alopécie androgénétique)",value:"Calvitie (alopécie androgénétique)"},
-        {label:"Alopécie areata",value:"Alopécie areata"},
-        {label:"Traction alopécie",value:"Traction alopécie"},
-        {label:"Perte de cheveux due au stress (effluvium télogène)",value:"Perte de cheveux due au stress (effluvium télogène)"},
-        {label:"Perte de cheveux due à la chimiothérapie",value:"Perte de cheveux due à la chimiothérapie"},
-        {label:"Alopécie cicatricielle",value:"Alopécie cicatricielle"},
-        {label:"Poux de tête (pédiculose capitis)",value:"Poux de tête (pédiculose capitis)"},
-        {label:"Trichotillomanie (arrachement compulsif des cheveux)",value:"Trichotillomanie (arrachement compulsif des cheveux)"},
-        {label:"Perte de cheveux due à une carence nutritionnelle",value:"Perte de cheveux due à une carence nutritionnelle"},
-        {label:"Alopécie de la couronne (effluvium anagène)",value:"Alopécie de la couronne (effluvium anagène)"},
-        {label:"Perte de cheveux due à une maladie du cuir chevelu",value:"Perte de cheveux due à une maladie du cuir chevelu"},
-        {label:"Hypertrichose",value:"Hypertrichose"},
-        {label:"Perte de cheveux due à une maladie systémique",value:"Perte de cheveux due à une maladie systémique"},
-        {label:"Perte de cheveux due à des médicaments",value:"Perte de cheveux due à des médicaments"},
-        {label:"Perte de cheveux liée à l'âge",value:"Perte de cheveux liée à l'âge"},
-        {label:"Cheveux cassants et fragiles",value:"Cheveux cassants et fragiles"},
-        {label:"Chute de cheveux saisonnière",value:"Chute de cheveux saisonnière"},
-        {label:"Cheveux gras (séborrhée)",value:"Cheveux gras (séborrhée)"},
-        {label:'Alopécie (chute de cheveux localisée ou diffuse)',value:'Alopécie (chute de cheveux localisée ou diffuse)'},
-        {label:'Cassure des cheveux',value:'Cassure des cheveux'},
-        {label:'Croûtes sur le cuir chevelu',value:'Croûtes sur le cuir chevelu'},
-        {label:'Dépilation localisée',value:'Dépilation localisée'},
-        {label:'Démangeaisons du cuir chevelu',value:'Démangeaisons du cuir chevelu'},
-        {label:'Desquamation (pellicules, psoriasis)',value:'Desquamation (pellicules, psoriasis)'},
-        {label:'Douleurs au cuir chevelu',value:'Douleurs au cuir chevelu'},
-        {label:'Effluvium télogène (perte diffuse de cheveux)',value:'Effluvium télogène (perte diffuse de cheveux)'},
-        {label:'Érythème du cuir chevelu (rougeurs)',value:'Érythème du cuir chevelu (rougeurs)'},
-        {label:'Follicules enflammés',value:'Follicules enflammés'},
-        {label:'Hypertrichose (pilosité excessive)',value:'Hypertrichose (pilosité excessive)'},
-        {label:'Hypotrichose (perte de pilosité)',value:'Hypotrichose (perte de pilosité)'},
-        {label:'Kératose pilaire',value:'Kératose pilaire'},
-        {label:'Lésions suintantes',value:'Lésions suintantes'},
-        {label:'Nodules sous-cutanés',value:'Nodules sous-cutanés'},
-        {label:'Papules du cuir chevelu',value:'Papules du cuir chevelu'},
-        {label:'Pustules sur le cuir chevelu',value:'Pustules sur le cuir chevelu'},
-        {label:'Séborrhée (cuir chevelu gras)',value:'Séborrhée (cuir chevelu gras)'},
-        {label:'Squames épaisses (croûtes blanchâtres ou jaunâtres)',value:'Squames épaisses (croûtes blanchâtres ou jaunâtres)'},
-        {label:'Trichorrhexie nodosa (cheveux fragiles, cassants)',value:'Trichorrhexie nodosa (cheveux fragiles, cassants)'},
+const systemLabels = [
+  "Système respiratoire",
+  "Système cardiovasculaire", 
+  "Système neurologique",
+  "Système musculo-squelettique",
+  "Système gastro-intestinal",
+  "Système génito-urinaire",
+  "Système endocrinien",
+  "Système lymphatique",
+  "Système hématologique",
+  "Système cutané",
+  "Système auditif",
+  "Système visuel",
+];
 
-    ]
-    const examen : Ref<any> = ref({})
+// Computed property to determine which logic to use
+const isSpecialty1 = computed(() => Number(specialty) === 1);
+const isSpecialty2 = computed(() => Number(specialty) === 2);
 
-    async function getExamenPhysique(){
-        const data :any =  await examenClient.getByID(consult.examen_id)
+// Generic fetch function for different data types (specialty 1)
+const fetchData = async (query: string, dataType: string, targetArray: Ref<{ label: string; value: string }[]>, loadingRef: Ref<boolean>) => {
+    loadingRef.value = true;
+    try {
+        const response = await constClient.getAll(query, dataType);
+        targetArray.value = response.data.map((item: any) => ({
+            label: item.label,
+            value: item.label,
+        }));
+    } catch (e) {
+        targetArray.value = [];
+    } finally {
+        loadingRef.value = false;
+    }
+};
+
+// Specific fetch functions for specialty 1
+const fetchVisageData = async (query: string) => {
+    await fetchData(query, 'data_visage', data_visage, loadingVisage);
+};
+
+const fetchCorpsData = async (query: string) => {
+    await fetchData(query, 'data_corps', data_corps, loadingCorps);
+};
+
+const fetchOnglesData = async (query: string) => {
+    await fetchData(query, 'data_ongles', data_ongles, loadingOngles);
+};
+
+const fetchCheveuxData = async (query: string) => {
+    await fetchData(query, 'data_cheveux', data_cheveux, loadingCheveux);
+};
+
+// Fetch function for specialty 2
+async function fetchSystemOptions(
+  query: string,
+  type: string,
+  target: Ref<{ label: string; value: string }[]>
+) {
+  try {
+    const response = await constClient.getAll(query, type);
+    target.value = response.data.map((item: any) => ({
+      label: item.label,
+      value: item.label,
+    }));
+  } catch (error) {
+    target.value = [];
+  }
+}
+
+// Load examination data based on specialty
+async function getExamenPhysique() {
+    const data: any = await examenClient.getByID(consult.examen_id);
+    
+    if (isSpecialty1.value) {
+        // Specialty 1 logic
         return {
-            id:data.id,
-            hair : JSON.parse(data.hair),
-            nails : JSON.parse(data.nails),
-            face : JSON.parse(data.face),
-            body : JSON.parse(data.body)
-        }
+            id: data.id,
+            hair: JSON.parse(data.hair),
+            nails: JSON.parse(data.nails),
+            face: JSON.parse(data.face),
+            body: JSON.parse(data.body)
+        };
+    } else if (isSpecialty2.value) {
+        // Specialty 2 logic
+        return {
+            id: data.id,
+            sys1: JSON.parse(data.respiratory_system),
+            sys2: JSON.parse(data.cardiovascular_system),
+            sys3: JSON.parse(data.neurological_system),
+            sys4: JSON.parse(data.musculoskeletal_system),
+            sys5: JSON.parse(data.gastrointestinal_system),
+            sys6: JSON.parse(data.genitourinary_system),
+            sys7: JSON.parse(data.endocrine_system),
+            sys8: JSON.parse(data.lymphatic_system),
+            sys9: JSON.parse(data.hematologic_system),
+            sys10: JSON.parse(data.cutaneous_system),
+            sys11: JSON.parse(data.auditory_system),
+            sys12: JSON.parse(data.visual_system),
+        };
     }
-    async function setExamenPhysique(){
-        await examenClient.update(examen.value)
-        examen.value = await getExamenPhysique()
-    }
+    
+    return { id: data.id };
+}
 
-    onBeforeMount(async ()=>{
-        examen.value = await getExamenPhysique()
-    })
+// Save examination data based on specialty
+async function setExamenPhysique() {
+    if (isSpecialty1.value) {
+        // Specialty 1 logic - update with hair, nails, face, body
+        await examenClient.update(examen.value);
+    } else if (isSpecialty2.value) {
+        // Specialty 2 logic - update with systems
+        const payload = {
+            id: examen.value.id,
+            sys1: examen.value.sys1,
+            sys2: examen.value.sys2,
+            sys3: examen.value.sys3,
+            sys4: examen.value.sys4,
+            sys5: examen.value.sys5,
+            sys6: examen.value.sys6,
+            sys7: examen.value.sys7,
+            sys8: examen.value.sys8,
+            sys9: examen.value.sys9,
+            sys10: examen.value.sys10,
+            sys11: examen.value.sys11,
+            sys12: examen.value.sys12,
+        };
+        await examenClient.update(payload);
+    }
+    
+    examen.value = await getExamenPhysique();
+}
+
+// Initialize data on component mount
+onBeforeMount(async () => {
+    examen.value = await getExamenPhysique();
+    
+    if (isSpecialty1.value) {
+        // Initialize specialty 1 data
+        await Promise.all([
+            fetchVisageData(''),
+            fetchCorpsData(''),
+            fetchOnglesData(''),
+            fetchCheveuxData('')
+        ]);
+    } else if (isSpecialty2.value) {
+        // Initialize specialty 2 data
+        await Promise.all(
+            systemOptions.map((refArray, index) =>
+                fetchSystemOptions("", `sys${index + 1}`, refArray)
+            )
+        );
+    }
+});
 </script>
 
 <template>
     <el-form label-position="top">
-        <el-form-item label="Visage">
-            <el-select-v2
-                v-model="examen.face"
-                :options="data_visage"
-                placeholder="Selectionner"
-                multiple
-                filterable
-                allow-create
-                class="w-full"
-                clearable
-                @change="async ()=>{await setExamenPhysique()}"
-                :disabled="!consult.edit"
-            />
-        </el-form-item>
-        <el-form-item label="Corps">
-            <el-select-v2
-                v-model="examen.body"
-                :options="data_corps"
-                placeholder="Selectionner"
-                multiple
-                filterable
-                allow-create
-                class="w-full"
-                clearable
-                @change="async()=>{await setExamenPhysique()} "
-                :disabled="!consult.edit"
-            />
-        </el-form-item>
-        <el-form-item label="Ongles">
-            <el-select-v2
-                v-model="examen.nails"
-                :options="data_ongles"
-                placeholder="Selectionner"
-                multiple
-                filterable
-                allow-create
-                class="w-full"
-                clearable
-                @change="async ()=>{await setExamenPhysique()}"
-                :disabled="!consult.edit"
-            />
-        </el-form-item>
-        <el-form-item label="Cheveux">
-            <el-select-v2
-                v-model="examen.hair"
-                :options="data_cheveux"
-                placeholder="Selectionner"
-                multiple
-                filterable
-                allow-create
-                class="w-full"
-                clearable
-                @change="async ()=>{await setExamenPhysique()}"
-                :disabled="!consult.edit"
-            />
-        </el-form-item>
+        <!-- Specialty 1 Template - Individual body parts -->
+        <template v-if="isSpecialty1">
+            <el-form-item label="Visage">
+                <el-select-v2
+                    v-model="examen.face"
+                    :options="data_visage"
+                    placeholder="Selectionner"
+                    multiple
+                    filterable
+                    remote
+                    reserve-keyword
+                    allow-create
+                    class="w-full"
+                    clearable
+                    :remote-method="fetchVisageData"
+                    :loading="loadingVisage"
+                    @change="async ()=>{await setExamenPhysique()}"
+                    :disabled="!consult.edit"
+                />
+            </el-form-item>
+            <el-form-item label="Corps">
+                <el-select-v2
+                    v-model="examen.body"
+                    :options="data_corps"
+                    placeholder="Selectionner"
+                    multiple
+                    filterable
+                    remote
+                    reserve-keyword
+                    allow-create
+                    class="w-full"
+                    clearable
+                    :remote-method="fetchCorpsData"
+                    :loading="loadingCorps"
+                    @change="async()=>{await setExamenPhysique()} "
+                    :disabled="!consult.edit"
+                />
+            </el-form-item>
+            <el-form-item label="Ongles">
+                <el-select-v2
+                    v-model="examen.nails"
+                    :options="data_ongles"
+                    placeholder="Selectionner"
+                    multiple
+                    filterable
+                    remote
+                    reserve-keyword
+                    allow-create
+                    class="w-full"
+                    clearable
+                    :remote-method="fetchOnglesData"
+                    :loading="loadingOngles"
+                    @change="async ()=>{await setExamenPhysique()}"
+                    :disabled="!consult.edit"
+                />
+            </el-form-item>
+            <el-form-item label="Cheveux">
+                <el-select-v2
+                    v-model="examen.hair"
+                    :options="data_cheveux"
+                    placeholder="Selectionner"
+                    multiple
+                    filterable
+                    remote
+                    reserve-keyword
+                    allow-create
+                    class="w-full"
+                    clearable
+                    :remote-method="fetchCheveuxData"
+                    :loading="loadingCheveux"
+                    @change="async ()=>{await setExamenPhysique()}"
+                    :disabled="!consult.edit"
+                />
+            </el-form-item>
+        </template>
+
+        <!-- Specialty 2 Template - Body systems -->
+        <template v-else-if="isSpecialty2">
+            <template v-for="(label, i) in systemLabels" :key="i">
+                <el-form-item :label="label">
+                    <el-select-v2
+                        v-model="examen[`sys${i + 1}`]"
+                        :options="systemOptions[i]"
+                        placeholder="Selectionner"
+                        multiple
+                        filterable
+                        allow-create
+                        clearable
+                        remote
+                        :remote-method="(q) => fetchSystemOptions(q, `sys${i + 1}`, systemOptions[i])"
+                        class="w-full"
+                        @change="setExamenPhysique"
+                        :disabled="!consult.edit"
+                    />
+                </el-form-item>
+            </template>
+        </template>
+
+        <!-- Fallback for other specialties -->
+        <template v-else>
+            <el-form-item>
+                <p>Cette spécialité n'est pas encore supportée.</p>
+            </el-form-item>
+        </template>
     </el-form>
 </template>

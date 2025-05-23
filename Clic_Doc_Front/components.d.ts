@@ -34,6 +34,7 @@ declare module 'vue' {
     Observation: typeof import('./src/components/Consult/Observation.vue')['default']
     Ordonnance: typeof import('./src/components/Consult/Ordonnance.vue')['default']
     Ordonnances: typeof import('./src/components/Folder/Ordonnances.vue')['default']
+    PrintModal: typeof import('./src/components/PrintModal.vue')['default']
     RendezVous: typeof import('./src/components/Folder/RendezVous.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']

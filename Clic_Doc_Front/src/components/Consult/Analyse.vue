@@ -1,29 +1,32 @@
 <script setup lang="ts">
-
-import { Ref , computed, onBeforeMount, ref } from "vue";
-import {useConsultStore} from "../../../core/Data/stores/consultation"
-
+import { Ref, computed, onBeforeMount, ref } from "vue";
+import { useConsultStore } from "../../../core/Data/stores/consultation";
 import { Demande } from '../../../core/Clients/DemandeAnalyse';
 import { Analyses } from '../../../core/Clients/Analyses';
-
-import ENV from '../../../core/env'
-import { ElMessage } from 'element-plus'
+import ENV from '../../../core/env';
+import { ElMessage } from 'element-plus';
+import PrintModal from '../PrintModal.vue'; // Import the new component
 
 const consult = useConsultStore();
 
-const demande : Ref<any> = ref({
-    consultation_id:consult.consult,
-    analyse_id:"",
-})
+const demande: Ref<any> = ref({
+    consultation_id: consult.consult,
+    analyse_id: "",
+});
 
-const demandes : Ref<any> = ref([])
-const analyses : Ref<any> = ref([])
-const analyseClient = new Analyses()
-const demandeClient = new Demande()
+const demandes: Ref<any> = ref([]);
+const analyses: Ref<any> = ref([]);
+const analyseClient = new Analyses();
+const demandeClient = new Demande();
 
 const searchTerm: Ref<string> = ref('');
 const showContent = ref(false);
 const inputAnalyse = ref("");
+
+// Reference to the PrintModal component
+const printModalRef = ref();
+const modalUrl = ref("");
+const modalTitle = ref("");
 
 const filteredAnalyses = computed(() => {
     return analyses.value.filter((analyse: any) =>
@@ -31,29 +34,27 @@ const filteredAnalyses = computed(() => {
     );
 });
 
-
-
-async function getDemande(){
-    return  await demandeClient.getByConsult(consult.consult)
+async function getDemande() {
+    return await demandeClient.getByConsult(consult.consult);
 }
-async function setDemande(){
-    await demandeClient.add(demande.value)
-    demandes.value = await getDemande()
-    demande.value.analyse_id=""
+
+async function setDemande() {
+    await demandeClient.add(demande.value);
+    demandes.value = await getDemande();
+    demande.value.analyse_id = "";
 }
-async function removeDemande(x:number) {
-    if(confirm('êtes vous sur de vouloir supprimer cet element')==true )
-    {
-        await demandeClient.delete(x) 
+
+async function removeDemande(x: number) {
+    if (confirm('êtes vous sur de vouloir supprimer cet element') == true) {
+        await demandeClient.delete(x);
     }
-    demandes.value = await getDemande()
+    demandes.value = await getDemande();
 }
 
-onBeforeMount(async ()=>{
-
-    analyses.value = await analyseClient.getAll()
-    demandes.value = await getDemande()
-})
+onBeforeMount(async () => {
+    analyses.value = await analyseClient.getAll();
+    demandes.value = await getDemande();
+});
 
 async function addMore() {
     const analyseName = inputAnalyse.value;
@@ -82,7 +83,14 @@ const handleShowContent = () => {
     showContent.value = !showContent.value;
 };
 
+// Open the print modal using our new component
+function openPrintModal() {
+    modalTitle.value = "Aperçu à imprimer";
+    modalUrl.value = `${ENV.VITE_BACKEND}/analyse/${consult.consult}`;
+    printModalRef.value.openModal();
+}
 </script>
+
 <template>
     <div class="container">
         <el-form label-position="top">
@@ -152,14 +160,23 @@ const handleShowContent = () => {
                 </template>
             </el-table-column>
         </el-table>
-        <div class="text-right">
-            <a class="btn btn-sm btn-link" target="_blank" :href="ENV.VITE_BACKEND+'/analyse/'+consult.consult"> <el-icon> <Printer/></el-icon> Imprimer </a>
-        </div>
+
+        <el-button class="btn btn-sm btn-link text-right right-0" @click="openPrintModal" style="float: right;text-decoration: none; ">
+            <el-icon style="margin-right: 5px;"><Printer /></el-icon> Imprimer
+        </el-button>
+    
     </div>
+
+    <!-- Using our new PrintModal component -->
+    <PrintModal 
+        ref="printModalRef" 
+        :title="modalTitle" 
+        :url="modalUrl" 
+        @close="() => {}" 
+    />
 </template>
 
 <style scoped>
-
 .analyse-row {
     display: flex;
     align-items: end;

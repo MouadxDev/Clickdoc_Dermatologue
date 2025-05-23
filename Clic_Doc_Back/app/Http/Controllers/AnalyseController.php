@@ -9,6 +9,7 @@ use App\Models\Entite;
 use App\Models\Patient;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AnalyseController extends Controller
 {
@@ -83,15 +84,32 @@ class AnalyseController extends Controller
 
     public function imprimer(string $id)
     {
-        $data["analyses"] = DemandeAnalyse::join("analyses as a","a.id",'=',"demande_analyses.analyse_id")
-        ->where("demande_analyses.consultation_id","=",$id)
-        ->select("a.libelle")
-        ->get();
-        $consult = Consultation::find($id);
-        $data["patient"] = Patient::find($consult->patient_id);
-        $data["docteur"] = User::find($consult->doctor_id);
-        $data["entite"] = Entite::find($data["docteur"]->entity_id);
-
-        return view("analyses",$data);
+        // Get analyses with their labels
+        $data["analyses"] = DemandeAnalyse::join("analyses as a", "a.id", '=', "demande_analyses.analyse_id")
+            ->where("demande_analyses.consultation_id", $id)
+            ->select("a.libelle")
+            ->get();
+    
+        // Get the consultation
+        $consult = Consultation::findOrFail($id);
+    
+        // Get related patient and doctor
+        $data["patient"] = Patient::findOrFail($consult->patient_id);
+        $data["docteur"] = User::findOrFail($consult->doctor_id);
+    
+        // Get entity
+        $data["entite"] = Entite::findOrFail($data["docteur"]->entity_id);
+    
+        // Get branding file path using entity_id
+        $branding = DB::table('entity_branding')
+            ->where('entity_id', $data["entite"]->id)
+            ->select('file_path')
+            ->first();
+    
+        // Add branding file path to data
+        $data["branding_file"] = $branding?->file_path;
+    
+        return view("analyses", $data);
     }
+    
 }

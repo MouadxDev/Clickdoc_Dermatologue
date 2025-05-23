@@ -8,6 +8,7 @@ import { computed } from "@vue/reactivity";
 import { LaboMedicament } from "../../../core/Clients/LaboMed";
 import { ElMessage } from "element-plus";
 import { watch } from 'vue';
+import PrintModal from "../PrintModal.vue";
 
 const consult = useConsultStore();
 const ordonnanceClient = new Ordonnance()
@@ -19,20 +20,20 @@ const laboratoire_list: Ref<any> = ref([])
 const showContent = ref(false);
 const inputMedicament = ref("");
 
-// Filter Logic
-const searchTerm: Ref<string> = ref('');
+// Print Modal Logic
+const printModalRef = ref();
+const modalTitle = ref("");
+const modalUrl = ref("");
 
-const filteredMedicaments = computed(() => {
-  return medicaments.value.filter((medicament: any) => {
-    const matchesLab = prescription.value.laboratoire
-      ? medicament.lab === prescription.value.laboratoire
-      : true;
-    const matchesSearch = medicament.nom
-      .toLowerCase()
-      .includes(searchTerm.value.toLowerCase());
-    return matchesLab && matchesSearch;
-  });
-});
+
+const tempMedicamentName = ref('');
+
+function openPrintModal() {
+    modalTitle.value = "Aperçu à imprimer";
+    modalUrl.value = `${ENV.VITE_BACKEND}/ordonnance/${consult.consult}`;
+    printModalRef.value.openModal();
+}
+
 
 const prescription: Ref<any> = ref({
   consultation_id: consult.consult,
@@ -341,7 +342,7 @@ const frequencyOptions = [
   "Une fois par jour",
   "Deux fois par jour",
   "Trois fois par jour",
-  "Chaque heure",
+  "Chaque deux heures",
   "Matin et soir",
   "Au besoin",
   "Par jour",
@@ -513,6 +514,30 @@ async function loadMedicaments(query: string) {
   }
 }
 
+function onSelect(value: number) {
+  const selected = medicaments.value.find(m => m.id === value);
+  if (selected) {
+    tempMedicamentName.value = selected.nom;  // Store label text on select
+  }
+}
+
+function onInput(val: string) {
+  tempMedicamentName.value = val;             // Update temp text while typing
+}
+
+function onBlur() {
+  // On input lose focus, check if temp text matches existing medicament
+  const found = medicaments.value.find(m => m.nom === tempMedicamentName.value);
+
+  if (found) {
+    prescription.value.medicament_id = found.id;  // Use matched item
+  } else {
+    // User typed a new/edited medicament name
+    prescription.value.medicament_id = null;      // Clear id or handle as needed
+    console.log('New or edited medicament:', tempMedicamentName.value);
+  }
+}
+
 </script>
 
 <template>
@@ -522,22 +547,27 @@ async function loadMedicaments(query: string) {
         <el-col :span="19" class="input-col">
           <el-form-item label="Médicament" class="medicament-form-item">
             <el-select
-              class="w-full"
-              v-model="prescription.medicament_id"
-              placeholder="Rechercher un médicament"
-              filterable
-              remote
-              reserve-keyword
-              :remote-method="loadMedicaments"
-              :loading="loadingMedicament"
-            >
-              <el-option
-                v-for="m in medicaments"
-                :key="m.id"
-                :value="m.id"
-                :label="m.nom"
-              />
-            </el-select>
+                class="w-full"
+                v-model="prescription.medicament_id"
+                placeholder="Rechercher un médicament"
+                filterable
+                remote
+                reserve-keyword
+                :remote-method="loadMedicaments"
+                :loading="loadingMedicament"
+                @change="onSelect"     
+                @input="onInput"      
+                @blur="onBlur"  
+              >
+                <el-option
+                  v-for="m in medicaments"
+                  :key="m.id"
+                  :value="m.id"
+                  :label="m.nom"
+                />
+</el-select>
+
+
           </el-form-item>
         </el-col>
         <el-col :span="4" class="button-col">
@@ -679,12 +709,22 @@ async function loadMedicaments(query: string) {
 
 
     <div class="text-right mt-3">
-      <a class="btn btn-sm btn-link" target="_blank" :href="ENV.VITE_BACKEND+'/ordonnance/'+consult.consult">
+      <!-- <a class="btn btn-sm btn-link" target="_blank" :href="ENV.VITE_BACKEND+'/ordonnance/'+consult.consult">
         <el-icon>
           <Printer />
         </el-icon> Imprimer
-      </a>
+      </a> -->
+        <el-button class="btn btn-sm btn-link text-right right-0" @click="openPrintModal" style="float: right;text-decoration: none; ">
+            <el-icon style="margin-right: 5px;"><Printer /></el-icon> Imprimer
+        </el-button>
     </div>
+
+    <PrintModal 
+        ref="printModalRef" 
+        :title="modalTitle" 
+        :url="modalUrl" 
+        @close="() => {}" 
+    />
   </div>
   <!-- Modal -->
   <el-dialog title="Configurer les détails du médicament" v-model="showModal" width="700px" :close-on-click-modal="false"
@@ -820,6 +860,9 @@ async function loadMedicaments(query: string) {
       </div>
     </template>
   </el-dialog>
+
+
+  
 </template>
 
 

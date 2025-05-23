@@ -140,6 +140,7 @@ class OrdonnanceController extends Controller
     
     public function imprimer(string $id)
     {
+        // Get ordonnance data with medication names
         $data["ordonnance"] = Ordonnance::join("medicaments as m", "m.id", '=', "ordonnances.medicament_id")
             ->where("ordonnances.consultation_id", "=", $id)
             ->select(
@@ -147,12 +148,26 @@ class OrdonnanceController extends Controller
                 "ordonnances.*"
             )
             ->get();
-
+    
+        // Get the consultation
         $consult = Consultation::find($id);
+    
+        // Get related patient and doctor
         $data["patient"] = Patient::find($consult->patient_id);
         $data["docteur"] = User::find($consult->doctor_id);
+    
+        // Get entity
         $data["entite"] = Entite::find($data["docteur"]->entity_id);
-
+    
+        // Get branding file path using entity_id
+        $branding = DB::table('entity_branding')
+            ->where('entity_id', $data["entite"]->id)
+            ->select('file_path')
+            ->first();
+    
+        // Add branding file path to data
+        $data["branding_file"] = $branding?->file_path;
+    
         return view("ordonnance", $data);
     }
 }
