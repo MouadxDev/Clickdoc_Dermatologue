@@ -35,10 +35,24 @@ class DemandeAnalyseController extends Controller
      */
     public function store(Request $request)
     {
+        // Check if analyse_id is null or empty and new_analyse is provided
+        $analyseId = $request->analyse_id;
+        $newAnalyseName = $request->new_analyse;
+    
+        if (empty($analyseId) && !empty($newAnalyseName)) {
+            // Create the new Analyse
+            $newAnalyse = new \App\Models\Analyse(); // Adjust namespace as needed
+            $newAnalyse->libelle = $newAnalyseName;
+            $newAnalyse->save();
+    
+            // Use the new ID for the demande
+            $analyseId = $newAnalyse->id;
+        }
+    
         $model = new DemandeAnalyse();
-        $model->consultation_id = request()->consultation_id; 
-        $model->analyse_id = request()->analyse_id; 
-        $model->state = "soumise"; 
+        $model->consultation_id = $request->consultation_id;
+        $model->analyse_id = $analyseId;
+        $model->state = "soumise";
         $model->save();
     
         // Generate or retrieve the unique key for the consultation
@@ -49,12 +63,9 @@ class DemandeAnalyseController extends Controller
             $uniqueKey = null;
     
             do {
-                // Generate a custom unique key, e.g., "AN-123456"
-                $prefix = 'AN'; // Prefix for the key
-                $randomNumber = mt_rand(100000, 999999); // Generate a 6-digit random number
+                $prefix = 'AN';
+                $randomNumber = mt_rand(100000, 999999);
                 $uniqueKey = "{$prefix}-{$randomNumber}";
-    
-                // Check if the generated key already exists
             } while (ClicklabJoin::where('unique_key', $uniqueKey)->exists());
     
             $clilcklabJoin = new ClicklabJoin();
@@ -68,6 +79,7 @@ class DemandeAnalyseController extends Controller
             'clilcklab_join' => $clilcklabJoin
         ];
     }
+    
     
     
 

@@ -14,23 +14,39 @@ use App\Models\WaitingList;
 
 class ConsultationController extends Controller
 {
-    public function index()
-    {
-        
-        $consultation = Consultation::where("doctor_id",'=',auth()->user()->id)
-        ->join("patients","consultations.patient_id",'=',"patients.id")
-        ->join("users","consultations.doctor_id",'=',"users.id");
-        if(request()->has("date"))
-        {
-            $consultation -> whereDate("consultations.created_at","=",request()->date);
-        }
-        if(request()->has("patient_id"))
-        {
-            $consultation -> where("patient_id","=",request()->patient_id);
-        }
-        $consultation ->select("consultations.*","patients.name","patients.surname","patients.avatar","users.name as docteur");
-        return $consultation->paginate(request()->toGet);
+public function index()
+{
+    $consultation = Consultation::where("doctor_id", auth()->user()->id)
+        ->join("patients", "consultations.patient_id", "=", "patients.id")
+        ->join("users", "consultations.doctor_id", "=", "users.id");
+
+    if (request()->has("date")) {
+        $consultation->whereDate("consultations.created_at", request()->date);
     }
+
+    if (request()->has("patient_id")) {
+        $consultation->where("patient_id", request()->patient_id);
+    }
+
+    $consultation->select(
+        "consultations.*",
+        "patients.name",
+        "patients.surname",
+        "patients.avatar",
+        "users.name as docteur"
+    );
+
+    $paginated = $consultation->paginate(request()->toGet);
+
+    // Format created_at
+    $paginated->getCollection()->transform(function ($item) {
+        $item->created_at_formatted = \Carbon\Carbon::parse($item->created_at)->format('Y-m-d H:i:s');
+        return $item;
+    });
+
+    return $paginated;
+}
+
 
     /**
      * Show the form for creating a new resource.

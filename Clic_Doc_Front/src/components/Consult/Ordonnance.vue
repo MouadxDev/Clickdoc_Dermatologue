@@ -1,126 +1,126 @@
 <script setup lang="ts">
-import { Ref, onBeforeMount, ref } from "vue";
-import { useConsultStore } from "../../../core/Data/stores/consultation"
-import { Ordonnance } from '../../../core/Clients/Ordonnance';
-import { Medicament } from '../../../core/Clients/Medicament';
-import ENV from '../../../core/env'
-import { computed } from "@vue/reactivity";
+import { Ref, onBeforeMount, ref, watch } from "vue";
+import { useConsultStore } from "../../../core/Data/stores/consultation";
+import { Ordonnance } from "../../../core/Clients/Ordonnance";
+import { Medicament } from "../../../core/Clients/Medicament";
 import { LaboMedicament } from "../../../core/Clients/LaboMed";
+import ENV from "../../../core/env";
 import { ElMessage } from "element-plus";
-import { watch } from 'vue';
 import PrintModal from "../PrintModal.vue";
+import { ArrowDown, Select, Edit, Delete, Printer } from '@element-plus/icons-vue'; // Import icons directly
 
-const consult = useConsultStore();
-const ordonnanceClient = new Ordonnance()
-const medicamentClient = new Medicament()
+// --- Stores and API Clients ---
+const consultStore = useConsultStore();
+const ordonnanceClient = new Ordonnance();
+const medicamentClient = new Medicament();
 const laboMedicamentClient = new LaboMedicament();
-const medicaments: Ref<any> = ref([])
-const laboratoire_list: Ref<any> = ref([])
 
-const showContent = ref(false);
-const inputMedicament = ref("");
+// --- Reactive State ---
+const medicaments: Ref<any[]> = ref([]);
+const laboratoireList: Ref<any[]> = ref([]);
+const ordonnanceList: Ref<any[]> = ref([]); // Renamed for clarity
+const showAddMedicamentInput = ref(false); // Renamed for clarity
+const newMedicamentName = ref(""); // Renamed for clarity
+const showMoreFilters = ref(false);
 
-// Print Modal Logic
-const printModalRef = ref();
-const modalTitle = ref("");
+const prescriptionForm = ref({
+  consultation_id: consultStore.consult,
+  medicament_id: "",
+  commentaire: "",
+  dose_id: "", // Consider if this is still needed or can be removed
+  context: "", // Add treatment context - consider renaming to treatmentContext for consistency
+});
+
+const tempMedicamentName = ref(""); // For autocomplete input
+
+const doseValues = ref<Record<"Matin" | "Midi" | "Soir" | "Au coucher", number>>({
+  Matin: 0,
+  Midi: 0,
+  Soir: 0,
+  "Au coucher": 0,
+});
+
+// --- Print Modal Logic ---
+const printModalRef = ref<InstanceType<typeof PrintModal> | null>(null);
+const modalTitle = ref("Aperçu à imprimer");
 const modalUrl = ref("");
 
-
-const tempMedicamentName = ref('');
-
-function openPrintModal() {
-    modalTitle.value = "Aperçu à imprimer";
-    modalUrl.value = `${ENV.VITE_BACKEND}/ordonnance/${consult.consult}`;
-    printModalRef.value.openModal();
+function openPrintPreviewModal() {
+  modalUrl.value = `${ENV.VITE_BACKEND}/ordonnance/${consultStore.consult}`;
+  printModalRef.value?.openModal();
 }
 
+// --- Modal for Medicament Details (Add/Edit) ---
+const showMedicamentDetailModal = ref(false); // Renamed for clarity
+const isEditMode = ref(false);
+const currentEditOrdonnanceId = ref<number | null>(null); // Renamed for clarity
 
-const prescription: Ref<any> = ref({
-  consultation_id: consult.consult,
-  commentaire: "",
-  medicament_id: "",
-  dose_id: "",
-  context: "", // Add treatment context
+const medicamentDetailForm = ref({
+  unit: "",
+  administrationMode: "",
+  frequency: [] as string[], // Explicitly type as string array
+  durationValue: null as number | null,
+  durationUnit: "",
+  comment: "",
+  contraindications: [] as string[],
+  treatmentContext: "",
+  applicationSite: "",
+  specialInstructions: "", // Retained as per your original code, though you had it commented out in setOrdonnance
 });
 
-async function getOrdonnance() {
-  return await ordonnanceClient.getByID(consult.consult)
+// --- Data Fetching ---
+async function fetchOrdonnance() {
+  try {
+    ordonnanceList.value = await ordonnanceClient.getByID(consultStore.consult);
+  } catch (error) {
+    ElMessage.error("Erreur lors du chargement des ordonnances.");
+    console.error("Failed to fetch ordonnances:", error);
+  }
 }
 
-const handleShowContent = () => {
-  showContent.value = !showContent.value;
+async function fetchMedicaments(query?: string) {
+  loadingMedicament.value = true;
+  try {
+    medicaments.value = await medicamentClient.getAll({ q: query });
+  } catch (error) {
+    ElMessage.error("Erreur lors du chargement des médicaments.");
+    console.error("Failed to fetch medicaments:", error);
+  } finally {
+    loadingMedicament.value = false;
+  }
+}
+
+async function fetchLaboratoires() {
+  try {
+    laboratoireList.value = await laboMedicamentClient.getAll();
+  } catch (error) {
+    ElMessage.error("Erreur lors du chargement des laboratoires.");
+    console.error("Failed to fetch laboratoires:", error);
+  }
+}
+
+// --- Component Lifecycle ---
+onBeforeMount(async () => {
+  await Promise.all([fetchMedicaments(), fetchLaboratoires(), fetchOrdonnance()]);
+});
+
+// --- Watchers ---
+watch(
+  () => prescriptionForm.value.medicament_id,
+  (newMedicamentId) => {
+    // Logic if needed when medicament_id changes, e.g., fetching default doses
+    // For now, it seems your original watch was for 'laboratoire', which is not in prescriptionForm.
+    // If you intended to clear other fields when medicament changes, add it here.
+  }
+);
+
+// --- Handlers for Main Section ---
+const toggleAddMedicamentInput = () => {
+  showAddMedicamentInput.value = !showAddMedicamentInput.value;
 };
 
-const ordonnance: Ref<any> = ref([])
-const doses: Ref<any> = ref([])
-
-// Watch for changes in the laboratory selection
-watch(() => prescription.value.laboratoire, (newLab, oldLab) => {
-  if (newLab !== oldLab) {
-    prescription.value.medicament_id = ""; // Clear the Medicament selection
-  }
-});
-
-async function setOrdonnance() {
-  // Ensure a medicament is selected
-  if (!prescription.value.medicament_id) {
-    ElMessage.error("Veuillez sélectionner un médicament.");
-    return;
-  }
-
-  // Prepare data to send
-  const ordonnanceData = {
-    consultation_id: prescription.value.consultation_id,
-    medicament_id: prescription.value.medicament_id,
-    commentaire: modalForm.value.comment || "",
-    administration_mode: modalForm.value.administrationMode,
-    duration_value: modalForm.value.durationValue || null,
-    duration_unit: modalForm.value.durationUnit || null,
-    frequency: modalForm.value.frequency,
-    contraindications: modalForm.value.contraindications || [],
-    matin: doseValues.value.Matin || 0,
-    midi: doseValues.value.Midi || 0,
-    soir: doseValues.value.Soir || 0,
-    au_coucher: doseValues.value["Au coucher"] || 0,
-    treatment_context: modalForm.value.treatmentContext || "",
-    application_site: modalForm.value.applicationSite || "",
-    // special_instructions: modalForm.value.specialInstructions || "",
-  };
-
-  // Save data using API
-  try {
-    await ordonnanceClient.add(ordonnanceData);
-
-    // Refresh ordonnance list
-    ordonnance.value = await getOrdonnance();
-
-    // Reset fields
-    prescription.value.medicament_id = "";
-    prescription.value.commentaire = "";
-
-    Object.assign(modalForm.value, {
-      unit: "",
-      administrationMode: "",
-      frequency: [],
-      durationValue: null,
-      durationUnit: "",
-      comment: "",
-      contraindications: [],
-      treatmentContext: "",
-      applicationSite: "",
-      specialInstructions: "",
-    });
-
-    doses.value = [];
-    // ElMessage.success("Médicament ajouté à l'ordonnance avec succès.");
-  } catch (error) {
-    ElMessage.error("Une erreur s'est produite lors de l'enregistrement des données.");
-    console.error(error);
-  }
-}
-
-async function addMore() {
-  const medicamentName = inputMedicament.value;
+async function addNewMedicament() {
+  const medicamentName = newMedicamentName.value.trim();
 
   if (!medicamentName) {
     ElMessage.error("Veuillez entrer un nom de médicament.");
@@ -129,56 +129,39 @@ async function addMore() {
 
   const dataToSend = {
     nom: medicamentName,
-    lab_id: 0,
-    prix: 0,
+    lab_id: 0, // Assuming default or not required on add
+    prix: 0, // Assuming default or not required on add
   };
 
   try {
     await medicamentClient.add(dataToSend);
-    inputMedicament.value = "";
+    newMedicamentName.value = "";
     ElMessage.success("Médicament ajouté avec succès.");
-    medicaments.value = await medicamentClient.getAll();
-
+    await fetchMedicaments(); // Refresh the list
   } catch (error) {
     ElMessage.error("Une erreur s'est produite lors de l'ajout du médicament.");
-    console.error(error);
+    console.error("Failed to add medicament:", error);
   }
 }
 
-async function removeOrdonnance(x: number) {
-  if (confirm('Êtes-vous sûr de vouloir supprimer cet élément ?') == true) {
-    await ordonnanceClient.delete(x)
+async function removeOrdonnance(id: number) {
+  // if (confirm("Êtes-vous sûr de vouloir supprimer cet élément ?")) {
+    try {
+      await ordonnanceClient.delete(id);
+      ElMessage.success("Ordonnance supprimée avec succès.");
+      await fetchOrdonnance(); // Refresh the list
+    } catch (error) {
+      ElMessage.error("Une erreur s'est produite lors de la suppression.");
+      console.error("Failed to delete ordonnance:", error);
+    }
   }
-  ordonnance.value = await getOrdonnance()
-}
+// }  
 
-onBeforeMount(async () => {
-  medicaments.value = await medicamentClient.getAll();
-  laboratoire_list.value = await laboMedicamentClient.getAll();
-  ordonnance.value = await getOrdonnance()
-})
-
-// Modal visibility state
-const showModal = ref(false);
-const isEditMode = ref(false);
-const currentEditId = ref<number | null>(null);
-
-const modalForm = ref({
-  unit: "",
-  administrationMode: "",
-  frequency: [],
-  durationValue: null,
-  durationUnit: "",
-  comment: "",
-  contraindications: [],
-  treatmentContext: "", 
-  applicationSite: "",
-  specialInstructions: "",
-});
+// --- Modal Logic (Add/Edit Ordonnance) ---
 
 // Reset modal form to default values
-function resetModalForm() {
-  modalForm.value = {
+function resetMedicamentDetailForm() {
+  medicamentDetailForm.value = {
     unit: "",
     administrationMode: "",
     frequency: [],
@@ -190,49 +173,46 @@ function resetModalForm() {
     applicationSite: "",
     specialInstructions: "",
   };
-  
+
   doseValues.value = {
     Matin: 0,
     Midi: 0,
     Soir: 0,
     "Au coucher": 0,
   };
+  showMoreFilters.value = false; // Reset filter visibility
 }
 
-function handleShowModal() {
-  if (prescription.value.medicament_id) {
-    isEditMode.value = false;
-    currentEditId.value = null;
-    resetModalForm();
-    showModal.value = true;
-  } else {
-    ElMessage.error('Veuillez sélectionner un médicament.');
-  }
+function openMedicamentDetailModal() {
+  // Always allow opening the modal, we'll handle creation in saveOrdonnanceDetails
+  isEditMode.value = false;
+  currentEditOrdonnanceId.value = null;
+  resetMedicamentDetailForm();
+  showMedicamentDetailModal.value = true;
 }
 
 // Helper function to clean frequency data
 function cleanFrequencyData(frequency: any): string[] {
   if (!frequency) return [];
-  
+
   try {
-    // If it's already an array, return it
     if (Array.isArray(frequency)) {
-      return frequency.map(f => {
-        // If the item is a stringified array, parse it
-        if (typeof f === 'string' && f.startsWith('[')) {
-          try {
-            const parsed = JSON.parse(f);
-            return Array.isArray(parsed) ? parsed[0] : parsed;
-          } catch {
-            return f;
+      return frequency
+        .map((f) => {
+          if (typeof f === "string" && f.startsWith("[")) {
+            try {
+              const parsed = JSON.parse(f);
+              return Array.isArray(parsed) ? parsed[0] : parsed;
+            } catch {
+              return f;
+            }
           }
-        }
-        return f;
-      }).flat();
+          return f;
+        })
+        .flat();
     }
-    
-    // If it's a string, try to parse it
-    if (typeof frequency === 'string') {
+
+    if (typeof frequency === "string") {
       try {
         const parsed = JSON.parse(frequency);
         return Array.isArray(parsed) ? parsed : [parsed];
@@ -240,7 +220,7 @@ function cleanFrequencyData(frequency: any): string[] {
         return [frequency];
       }
     }
-    
+
     return [frequency];
   } catch {
     return [];
@@ -248,18 +228,15 @@ function cleanFrequencyData(frequency: any): string[] {
 }
 
 function handleEditOrdonnance(row: any) {
-  // Set edit mode
   isEditMode.value = true;
-  currentEditId.value = row.id;
-  
-  // Set the prescription medicament_id
-  prescription.value.medicament_id = row.medicament_id;
-  
-  // Clean and set frequency data
+  currentEditOrdonnanceId.value = row.id;
+
+  prescriptionForm.value.medicament_id = row.medicament_id;
+  tempMedicamentName.value = row.medicament; // Set the name for autocomplete
+
   const cleanedFrequency = cleanFrequencyData(row.frequency);
-  
-  // Populate the modal form with existing values
-  modalForm.value = {
+
+  medicamentDetailForm.value = {
     unit: row.unit || "",
     administrationMode: row.administration_mode || "",
     frequency: cleanedFrequency,
@@ -272,7 +249,6 @@ function handleEditOrdonnance(row: any) {
     specialInstructions: row.special_instructions || "",
   };
 
-  // Set the dose values
   doseValues.value = {
     Matin: row.matin || 0,
     Midi: row.midi || 0,
@@ -280,64 +256,183 @@ function handleEditOrdonnance(row: any) {
     "Au coucher": row.au_coucher || 0,
   };
 
-  // Show the modal
-  showModal.value = true;
+  showMedicamentDetailModal.value = true;
 }
 
-async function handleSaveModalData() {
-  // Prepare data to send
-  const ordonnanceData = {
-    consultation_id: prescription.value.consultation_id,
-    medicament_id: prescription.value.medicament_id,
-    commentaire: modalForm.value.comment || "",
-    administration_mode: modalForm.value.administrationMode,
-    duration_value: modalForm.value.durationValue || null,
-    duration_unit: modalForm.value.durationUnit || null,
-    frequency: modalForm.value.frequency,
-    contraindications: modalForm.value.contraindications || [],
+async function saveOrdonnanceDetails() {
+  let medicamentId = prescriptionForm.value.medicament_id;
+  
+  // If no medicament_id but we have a name, create new medication first
+  if (!medicamentId && tempMedicamentName.value.trim()) {
+    const newMedicament = await handleNewMedicament(tempMedicamentName.value.trim());
+    if (newMedicament && newMedicament.id) {
+      medicamentId = newMedicament.id;
+      prescriptionForm.value.medicament_id = medicamentId;
+    } else {
+      // Failed to create new medication
+      ElMessage.error("Impossible de créer le nouveau médicament.");
+      return;
+    }
+  }
+  
+  // Final check - we must have a medicament_id at this point
+  if (!medicamentId) {
+    ElMessage.error("Veuillez sélectionner ou saisir un médicament.");
+    return;
+  }
+
+  const payload = {
+    consultation_id: consultStore.consult,
+    medicament_id: medicamentId,
+    commentaire: medicamentDetailForm.value.comment || "",
+    administration_mode: medicamentDetailForm.value.administrationMode,
+    duration_value: medicamentDetailForm.value.durationValue || null,
+    duration_unit: medicamentDetailForm.value.durationUnit || null,
+    frequency: medicamentDetailForm.value.frequency,
+    contraindications: medicamentDetailForm.value.contraindications || [],
     matin: doseValues.value.Matin || 0,
     midi: doseValues.value.Midi || 0,
     soir: doseValues.value.Soir || 0,
     au_coucher: doseValues.value["Au coucher"] || 0,
-    treatment_context: modalForm.value.treatmentContext || "",
-    application_site: modalForm.value.applicationSite || "",
+    treatment_context: medicamentDetailForm.value.treatmentContext || "",
+    application_site: medicamentDetailForm.value.applicationSite || "",
   };
 
   try {
-    if (isEditMode.value && currentEditId.value) {
-      // Update existing ordonnance
-      await ordonnanceClient.update(currentEditId.value, ordonnanceData);
+    if (isEditMode.value && currentEditOrdonnanceId.value) {
+      await ordonnanceClient.update(currentEditOrdonnanceId.value, payload);
       ElMessage.success("Ordonnance mise à jour avec succès.");
     } else {
-      // Create new ordonnance
-      await ordonnanceClient.add(ordonnanceData);
+      await ordonnanceClient.add(payload);
       ElMessage.success("Médicament ajouté à l'ordonnance avec succès.");
     }
 
-    // Refresh ordonnance list
-    ordonnance.value = await getOrdonnance();
-
-    // Reset fields and close modal
-    prescription.value.medicament_id = "";
-    resetModalForm();
-    showModal.value = false;
+    await fetchOrdonnance(); // Refresh the list
+    prescriptionForm.value.medicament_id = null; // Reset for next entry
+    tempMedicamentName.value = ""; // Clear autocomplete input
+    resetMedicamentDetailForm();
+    showMedicamentDetailModal.value = false;
     isEditMode.value = false;
-    currentEditId.value = null;
-
+    currentEditOrdonnanceId.value = null;
   } catch (error) {
     ElMessage.error("Une erreur s'est produite lors de l'enregistrement des données.");
-    console.error(error);
+    console.error("Failed to save ordonnance details:", error);
   }
 }
 
-const timingOptions: { label: "Matin" | "Midi" | "Soir" | "Au coucher"; icon: string }[] = [
+function incrementDose(label: "Matin" | "Midi" | "Soir" | "Au coucher") {
+  doseValues.value[label]++;
+}
+
+function decrementDose(label: "Matin" | "Midi" | "Soir" | "Au coucher") {
+  if (doseValues.value[label] > 0) {
+    doseValues.value[label]--;
+  }
+}
+
+function toggleFrequency(option: string) {
+  const index = medicamentDetailForm.value.frequency.indexOf(option);
+  if (index > -1) {
+    medicamentDetailForm.value.frequency.splice(index, 1);
+  } else {
+    medicamentDetailForm.value.frequency.push(option);
+  }
+}
+
+function addContraindication(newContraindication: string) {
+  const trimmedContra = newContraindication.trim();
+  if (trimmedContra && !contraindicationOptions.value.includes(trimmedContra)) {
+    contraindicationOptions.value.push(trimmedContra);
+  }
+}
+
+// --- Autocomplete Logic ---
+const loadingMedicament = ref(false);
+
+function fetchMedicamentSuggestions(queryString: string, cb: (results: any[]) => void) {
+  if (!queryString) {
+    cb([]);
+    return;
+  }
+  medicamentClient
+    .getAll({ q: queryString })
+    .then((res) => {
+      // It's good practice to update the main medicaments list if fetched
+      medicaments.value = res;
+      cb(
+        res.map((m: any) => ({
+          value: m.nom, // Display in autocomplete
+          id: m.id,
+        }))
+      );
+    })
+    .catch((err) => {
+      console.error("Error fetching medicament suggestions:", err);
+      cb([]);
+    });
+}
+
+function handleMedicamentSelect(item: { value: string; id: number }) {
+  tempMedicamentName.value = item.value;
+  prescriptionForm.value.medicament_id = item.id;
+}
+
+function onMedicamentInput(val: string) {
+  tempMedicamentName.value = val;
+  // Reset medicament_id when user starts typing (it's a new/different value)
+  prescriptionForm.value.medicament_id = null;
+}
+
+// Add this new function to handle new medication creation
+async function handleNewMedicament(medicamentName: string) {
+  if (!medicamentName.trim()) {
+    ElMessage.error("Le nom du médicament ne peut pas être vide.");
+    return null;
+  }
+
+  const dataToSend = {
+    nom: medicamentName.trim(),
+    lab_id: 0, // Default value
+    prix: 0, // Default value
+  };
+
+  try {
+    const response = await medicamentClient.add(dataToSend);
+    // PHP returns the medicament object with the new ID
+    if (response && response.id) {
+      ElMessage.success("Nouveau médicament créé avec succès.");
+      await fetchMedicaments(); // Refresh the medicaments list
+      return response; // Return the full medicament object with ID
+    }
+    return null;
+  } catch (error) {
+    ElMessage.error("Erreur lors de la création du nouveau médicament.");
+    console.error("Failed to create new medicament:", error);
+    return null;
+  }
+}
+
+
+// Modify the onMedicamentBlur function to handle new medications
+async function onMedicamentBlur() {
+  const found = medicaments.value.find((m) => m.nom === tempMedicamentName.value?.trim());
+  if (found) {
+    // Existing medication found
+    prescriptionForm.value.medicament_id = found.id;
+  } else {
+    // New medication or no input - keep ID as null
+    prescriptionForm.value.medicament_id = null;
+  }
+}
+
+// --- Constants (Options for Modals) ---
+const timingOptions = [
   { label: "Matin", icon: "☀️" },
   { label: "Midi", icon: "🍴" },
   { label: "Soir", icon: "🌙" },
   { label: "Au coucher", icon: "🛌" },
 ];
 
-// Enhanced for dermatology
 const frequencyOptions = [
   "Une fois par jour",
   "Deux fois par jour",
@@ -362,10 +457,9 @@ const durationUnits = [
   "Jusqu'à amélioration",
   "Jusqu'à disparition des lésions",
   "Pendant toute la durée du traitement",
-  "À vie"
+  "À vie",
 ];
 
-// Enhanced for dermatology
 const unitOptions = [
   "g",
   "mg",
@@ -380,10 +474,9 @@ const unitOptions = [
   "capsule(s)",
   "sachet(s)",
   "goutte(s)",
-  "pulvérisation(s)"
+  "pulvérisation(s)",
 ];
 
-// Enhanced for dermatology
 const commentOptions = [
   "À appliquer sur peau propre et sèche",
   "Après la douche",
@@ -401,7 +494,6 @@ const commentOptions = [
   "Appliquer en couche épaisse",
 ];
 
-// Enhanced for dermatology
 const administrationModes = [
   "Topique",
   "Visage",
@@ -420,19 +512,17 @@ const administrationModes = [
   "Application occlusse",
   "Sous pansement",
   "Orale",
-  "Sublinguale"
+  "Sublinguale",
 ];
 
-// Treatment context options
 const treatmentContextOptions = [
   "Traitement d'attaque",
   "Traitement d'entretien",
   "Traitement préventif",
   "Traitement symptomatique",
-  "Traitement curatif"
+  "Traitement curatif",
 ];
 
-// Application site specific to dermatology
 const applicationSiteOptions = [
   "Zones infectées uniquement",
   "Zones érythémateuses",
@@ -445,36 +535,8 @@ const applicationSiteOptions = [
   "Visage entier",
   "Zone T du visage",
   "Contour des yeux (éviter)",
-  "Zones sèches uniquement"
+  "Zones sèches uniquement",
 ];
-
-const doseValues = ref<Record<"Matin" | "Midi" | "Soir" | "Au coucher", number>>({
-  Matin: 0,
-  Midi: 0,
-  Soir: 0,
-  "Au coucher": 0,
-});
-
-function incrementDose(label: "Matin" | "Midi" | "Soir" | "Au coucher") {
-  if (doseValues.value[label] !== undefined) {
-    doseValues.value[label]++;
-  }
-}
-
-function decrementDose(label: "Matin" | "Midi" | "Soir" | "Au coucher") {
-  if (doseValues.value[label] !== undefined && doseValues.value[label] > 0) {
-    doseValues.value[label]--;
-  }
-}
-
-function toggleFrequency(option: string) {
-  const index = modalForm.value.frequency.indexOf(option);
-  if (index > -1) {
-    modalForm.value.frequency.splice(index, 1);
-  } else {
-    modalForm.value.frequency.push(option); 
-  }
-}
 
 const contraindicationOptions = ref([
   "Allergie au médicament",
@@ -489,55 +551,6 @@ const contraindicationOptions = ref([
   "Acné",
   "Peau lésée",
 ]);
-
-function addContraindication(newContraindication: string) {
-  if (
-    newContraindication &&
-    !contraindicationOptions.value.includes(newContraindication)
-  ) {
-    contraindicationOptions.value.push(newContraindication);
-  }
-}
-
-const loadingMedicament = ref(false);
-
-async function loadMedicaments(query: string) {
-  if (!query) return;
-  loadingMedicament.value = true;
-  try {
-    const response = await medicamentClient.getAll({ q: query });
-    medicaments.value = response; // adapt this if the data is nested
-  } catch (e) {
-    ElMessage.error("Erreur lors du chargement des médicaments");
-  } finally {
-    loadingMedicament.value = false;
-  }
-}
-
-function onSelect(value: number) {
-  const selected = medicaments.value.find(m => m.id === value);
-  if (selected) {
-    tempMedicamentName.value = selected.nom;  // Store label text on select
-  }
-}
-
-function onInput(val: string) {
-  tempMedicamentName.value = val;             // Update temp text while typing
-}
-
-function onBlur() {
-  // On input lose focus, check if temp text matches existing medicament
-  const found = medicaments.value.find(m => m.nom === tempMedicamentName.value);
-
-  if (found) {
-    prescription.value.medicament_id = found.id;  // Use matched item
-  } else {
-    // User typed a new/edited medicament name
-    prescription.value.medicament_id = null;      // Clear id or handle as needed
-    console.log('New or edited medicament:', tempMedicamentName.value);
-  }
-}
-
 </script>
 
 <template>
@@ -546,204 +559,157 @@ function onBlur() {
       <el-row :gutter="10" class="medicament-row">
         <el-col :span="19" class="input-col">
           <el-form-item label="Médicament" class="medicament-form-item">
-            <el-select
-                class="w-full"
-                v-model="prescription.medicament_id"
-                placeholder="Rechercher un médicament"
-                filterable
-                remote
-                reserve-keyword
-                :remote-method="loadMedicaments"
-                :loading="loadingMedicament"
-                @change="onSelect"     
-                @input="onInput"      
-                @blur="onBlur"  
-              >
-                <el-option
-                  v-for="m in medicaments"
-                  :key="m.id"
-                  :value="m.id"
-                  :label="m.nom"
-                />
-</el-select>
-
-
+            <el-autocomplete
+              v-model="tempMedicamentName"
+              :fetch-suggestions="fetchMedicamentSuggestions"
+              placeholder="Rechercher ou saisir un médicament"
+              @select="handleMedicamentSelect"
+              @blur="onMedicamentBlur"
+              @input="onMedicamentInput"
+              class="w-full"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="4" class="button-col">
           <div class="button-container">
-            <el-button type="primary" size="small" @click="handleShowModal" class="btn-gear">
+            <el-button type="primary" size="small" @click="openMedicamentDetailModal" class="btn-gear">
               <img src="https://clickdoc.webredirect.org/public/Svg/settings.svg" alt="Settings Icon" />
             </el-button>
 
-            <el-button type="primary" size="small" @click="handleShowContent" class="btn-add">
-              <img src="https://clickdoc.webredirect.org/public/Svg/plus.svg" alt="Settings Icon" />
+            <el-button type="primary" size="small" @click="toggleAddMedicamentInput" class="btn-add">
+              <img src="https://clickdoc.webredirect.org/public/Svg/plus.svg" alt="Add Icon" />
             </el-button>
 
-            <el-button @click="async ()=>{await setOrdonnance()}" class="btn btn-sm btn-block background-clickdoc validate-btn" type="button">
-              <el-icon>
-                <Select />
-              </el-icon>
+            <el-button @click="saveOrdonnanceDetails" class="btn btn-sm btn-block background-clickdoc validate-btn" type="button">
+              <el-icon><Select /></el-icon>
             </el-button>
           </div>
-          
         </el-col>
 
-        <el-col :span="24" v-if="showContent" style="margin-top: 10px;">
+        <el-col :span="24" v-if="showAddMedicamentInput" style="margin-top: 10px">
           <el-form-item>
-            <el-input v-model="inputMedicament" placeholder="Ajoutez un Medicament">
+            <el-input v-model="newMedicamentName" placeholder="Ajoutez un Medicament">
               <template #append>
-                <el-button size="small" @click="addMore()">Ajouter</el-button>
+                <el-button size="small" @click="addNewMedicament()">Ajouter</el-button>
               </template>
             </el-input>
           </el-form-item>
         </el-col>
-
       </el-row>
     </el-form>
-    <hr class="my-3">
+    <hr class="my-3" />
     <div class="table-container">
-  <el-table :data="ordonnance" :border="true">
-    <el-table-column label="Médicament" width="220">
-      <template #default="scope">
-        {{ scope.row.medicament }}
-      </template>
-    </el-table-column>
-    <!-- Hidden columns for data access -->
-    <el-table-column v-if="false" label="Mode d'administration" width="220">
-      <template #default="scope">
-        {{ scope.row.administration_mode }}
-      </template>
-    </el-table-column>
-    <el-table-column v-if="false" label="Site d'application" width="220">
-      <template #default="scope">
-        {{ scope.row.application_site || 'Non spécifié' }}
-      </template>
-    </el-table-column>
-    <el-table-column v-if="false" label="Contexte" width="150">
-      <template #default="scope">
-        {{ scope.row.treatment_context || 'Standard' }}
-      </template>
-    </el-table-column>
-    <el-table-column label="Fréquence" width="200">
-      <template #default="scope">
-        <div class="frequency-tags">
-          <template v-if="cleanFrequencyData(scope.row.frequency).length > 0">
-            <el-tag 
-              v-for="(freq, index) in cleanFrequencyData(scope.row.frequency)" 
-              :key="index" 
-              type="info" 
-              class="tag-space"
-            >
-              {{ freq }}
-            </el-tag>
+      <el-table :data="ordonnanceList" :border="true">
+        <el-table-column label="Médicament" width="220">
+          <template #default="scope">
+            {{ scope.row.medicament }}
           </template>
-          <template v-else>
-            <el-tag type="info" class="tag-space">
+        </el-table-column>
+        <el-table-column v-if="false" label="Mode d'administration" width="220">
+          <template #default="scope">
+            {{ scope.row.administration_mode }}
+          </template>
+        </el-table-column>
+        <el-table-column v-if="false" label="Site d'application" width="220">
+          <template #default="scope">
+            {{ scope.row.application_site || "Non spécifié" }}
+          </template>
+        </el-table-column>
+        <el-table-column v-if="false" label="Contexte" width="150">
+          <template #default="scope">
+            {{ scope.row.treatment_context || "Standard" }}
+          </template>
+        </el-table-column>
+        <el-table-column label="Fréquence" width="200">
+          <template #default="scope">
+            <div class="frequency-tags">
+              <template v-if="cleanFrequencyData(scope.row.frequency).length > 0">
+                <el-tag
+                  v-for="(freq, index) in cleanFrequencyData(scope.row.frequency)"
+                  :key="index"
+                  type="info"
+                  class="tag-space"
+                >
+                  {{ freq }}
+                </el-tag>
+              </template>
+              <template v-else>
+                <el-tag type="info" class="tag-space"> Non spécifié </el-tag>
+              </template>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="Durée" width="150">
+          <template #default="scope">
+            {{ scope.row.duration_value }} {{ scope.row.duration_unit }}
+          </template>
+        </el-table-column>
+
+        <el-table-column label="Commentaire" width="260">
+          <template #default="scope">
+            <div class="comment-content">
+              <el-tag v-if="scope.row.commentaire" type="info" class="tag-space">
+                {{ scope.row.commentaire }}
+              </el-tag>
+              <el-tag v-else type="info" class="tag-space"> Aucun commentaire </el-tag>
+            </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="Timing" width="220">
+          <template #default="scope">
+            <el-tag v-if="scope.row.matin > 0" type="success" class="tag-space">Matin: {{ scope.row.matin }}</el-tag>
+            <el-tag v-if="scope.row.midi > 0" type="warning" class="tag-space">Midi: {{ scope.row.midi }}</el-tag>
+            <el-tag v-if="scope.row.soir > 0" type="primary" class="tag-space">Soir: {{ scope.row.soir }}</el-tag>
+            <el-tag v-if="scope.row.au_coucher > 0" type="danger" class="tag-space">Au coucher: {{ scope.row.au_coucher }}</el-tag>
+            <el-tag v-if="scope.row.matin + scope.row.midi + scope.row.soir + scope.row.au_coucher === 0" type="info">
               Non spécifié
             </el-tag>
           </template>
-        </div>
-      </template>
-    </el-table-column>
-    <el-table-column label="Durée" width="150">
-      <template #default="scope">
-        {{ scope.row.duration_value }} {{ scope.row.duration_unit }}
-      </template>
-    </el-table-column>
+        </el-table-column>
 
-    <!-- Commentaire Section as Tags -->
-    <el-table-column label="Commentaire" width="260">
-      <template #default="scope">
-        <div class="comment-content">
-          <el-tag v-if="scope.row.commentaire" type="info" class="tag-space">
-            {{ scope.row.commentaire }}
-          </el-tag>
-          <el-tag v-else type="info" class="tag-space">
-            Aucun commentaire
-          </el-tag>
-        </div>
-      </template>
-    </el-table-column>
+        <el-table-column width="120px" label="Actions">
+          <template #default="scope">
+            <div class="action-buttons">
+              <el-button size="small" type="warning" @click="handleEditOrdonnance(scope.row)" class="action-btn">
+                <el-icon><Edit /></el-icon>
+              </el-button>
 
-    <!-- Timing Section as Tags -->
-    <el-table-column label="Timing" width="220">
-      <template #default="scope">
-        <el-tag v-if="scope.row.matin > 0" type="success" class="tag-space">Matin: {{ scope.row.matin }}</el-tag>
-        <el-tag v-if="scope.row.midi > 0" type="warning" class="tag-space">Midi: {{ scope.row.midi }}</el-tag>
-        <el-tag v-if="scope.row.soir > 0" type="primary" class="tag-space">Soir: {{ scope.row.soir }}</el-tag>
-        <el-tag v-if="scope.row.au_coucher > 0" type="danger" class="tag-space">Au coucher: {{ scope.row.au_coucher }}</el-tag>
-        <el-tag v-if="scope.row.matin + scope.row.midi + scope.row.soir + scope.row.au_coucher === 0" type="info">
-          Non spécifié
-        </el-tag>
-      </template>
-    </el-table-column>
-
-    <el-table-column width="120px" label="Actions">
-  <template #default="scope">
-    <div class="action-buttons">
-      <!-- Edit Button -->
-      <el-button 
-        size="small" 
-        type="warning" 
-        @click="handleEditOrdonnance(scope.row)"
-        class="action-btn"
-      >
-        <el-icon><Edit /></el-icon>
-      </el-button>
-      
-      <!-- Delete Button -->
-      <el-button 
-        size="small" 
-        type="danger" 
-        @click="async () => { await removeOrdonnance(scope.row.id) }"
-        class="action-btn"
-      >
-        <el-icon><Delete /></el-icon>
-      </el-button>
+              <el-button size="small" type="danger" @click="removeOrdonnance(scope.row.id)" class="action-btn">
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
     </div>
-  </template>
-</el-table-column>
-  </el-table>
-</div>
-
 
     <div class="text-right mt-3">
-      <!-- <a class="btn btn-sm btn-link" target="_blank" :href="ENV.VITE_BACKEND+'/ordonnance/'+consult.consult">
-        <el-icon>
-          <Printer />
-        </el-icon> Imprimer
-      </a> -->
-        <el-button class="btn btn-sm btn-link text-right right-0" @click="openPrintModal" style="float: right;text-decoration: none; ">
-            <el-icon style="margin-right: 5px;"><Printer /></el-icon> Imprimer
-        </el-button>
+      <el-button class="btn btn-sm btn-link text-right right-0" @click="openPrintPreviewModal" style="float: right; text-decoration: none">
+        <el-icon style="margin-right: 5px"><Printer /></el-icon> Imprimer
+      </el-button>
     </div>
 
-    <PrintModal 
-        ref="printModalRef" 
-        :title="modalTitle" 
-        :url="modalUrl" 
-        @close="() => {}" 
-    />
+    <PrintModal ref="printModalRef" :title="modalTitle" :url="modalUrl" @close="() => {}" />
   </div>
-  <!-- Modal -->
-  <el-dialog title="Configurer les détails du médicament" v-model="showModal" width="700px" :close-on-click-modal="false"
-    class="custom-dialog">
+  <el-dialog
+    title="Configurer les détails du médicament"
+    v-model="showMedicamentDetailModal"
+    width="700px"
+    :close-on-click-modal="false"
+    class="custom-dialog"
+  >
     <div class="modal-body">
-      <!-- Dosage Timing -->
       <div class="dose-grid">
         <div v-for="time in timingOptions" :key="time.label" class="dose-card">
           <div class="dose-content">
             <div class="dose-icon">{{ time.icon }}</div>
             <div class="dose-label">{{ time.label }}</div>
             <div class="dose-controls">
-              <!-- Decrement Button -->
               <button class="control-btn" @click="decrementDose(time.label)">
                 <span class="minus-icon">−</span>
               </button>
-              <!-- Display Current Dose Value -->
               <span class="dose-value">{{ doseValues[time.label] }}</span>
-              <!-- Increment Button -->
               <button class="control-btn" @click="incrementDose(time.label)">
                 <span class="plus-icon">+</span>
               </button>
@@ -753,13 +719,11 @@ function onBlur() {
         </div>
       </div>
 
-      <!-- Main Form -->
       <div class="form-container">
-        <!-- Commentaire -->
         <div class="form-group">
           <label>Commentaire</label>
           <el-input
-            v-model="modalForm.comment"
+            v-model="medicamentDetailForm.comment"
             type="textarea"
             :rows="3"
             placeholder="Ajouter un commentaire..."
@@ -767,102 +731,148 @@ function onBlur() {
           />
         </div>
 
-        <!-- Treatment Context -->
         <div class="form-group">
-          <label>Contexte du traitement</label>
-          <el-select v-model="modalForm.treatmentContext" placeholder="Contexte du traitement" class="context-select"
-            filterable allow-create>
-            <el-option v-for="context in treatmentContextOptions" :key="context" :label="context" :value="context" />
-          </el-select>
+          <el-button type="text" @click="showMoreFilters = !showMoreFilters" class="toggle-filters-btn">
+            {{ showMoreFilters ? "Masquer les filtres" : "Afficher plus de filtres" }}
+            <el-icon class="toggle-icon" :class="{ 'is-active': showMoreFilters }">
+              <ArrowDown />
+            </el-icon>
+          </el-button>
         </div>
 
-        <!-- Administration Mode & Site -->
-        <div class="form-group">
-          <label>Par voie</label>
-          <el-select v-model="modalForm.administrationMode" placeholder="Filtrer par voie" class="admin-input"
-            filterable allow-create >
-            <el-option v-for="mode in administrationModes" :key="mode" :label="mode" :value="mode" />
-          </el-select>
-        </div>
-
-        <div class="form-group">
-          <label>Site d'application spécifique</label>
-          <el-select v-model="modalForm.applicationSite" placeholder="Site d'application" class="site-select"
-            filterable allow-create>
-            <el-option v-for="site in applicationSiteOptions" :key="site" :label="site" :value="site" />
-          </el-select>
-        </div>
-
-        <!-- Unit -->
-        <div class="form-group">
-          <label>Unité</label>
-          <el-select v-model="modalForm.unit" placeholder="Sélectionnez une unité" class="unit-select" filterable allow-create>
-            <el-option v-for="unit in unitOptions" :key="unit" :label="unit" :value="unit" />
-          </el-select>
-        </div>
-
-        <!-- Frequency -->
-        <div class="form-group">
-          <label>Fréquence</label>
-          <div class="button-grid">
-            <button
-              v-for="option in frequencyOptions"
-              :key="option"
-              :class="['option-button', { active: modalForm.frequency.includes(option) }]"
-              @click="toggleFrequency(option)"
+        <div v-show="showMoreFilters">
+          <div class="form-group">
+            <label>Contexte du traitement</label>
+            <el-select
+              v-model="medicamentDetailForm.treatmentContext"
+              placeholder="Contexte du traitement"
+              class="context-select"
+              filterable
+              allow-create
             >
-              {{ option }}
-            </button>
+              <el-option v-for="context in treatmentContextOptions" :key="context" :label="context" :value="context" />
+            </el-select>
           </div>
-        </div>
 
-        <!-- Duration -->
-        <div class="form-group">
-          <label>Durée</label>
-          <div class="duration-container">
-            <el-input-number v-model="modalForm.durationValue" :min="0" controls-position="right"
-              class="duration-input" />
-            <div class="button-grid duration-buttons">
-              <button v-for="unit in durationUnits" :key="unit"
-                :class="['option-button', { active: modalForm.durationUnit === unit }]"
-                @click="modalForm.durationUnit = unit">
-                {{ unit }}
+          <div class="form-group">
+            <label>Par voie</label>
+            <el-select
+              v-model="medicamentDetailForm.administrationMode"
+              placeholder="Filtrer par voie"
+              class="admin-input"
+              filterable
+              allow-create
+            >
+              <el-option v-for="mode in administrationModes" :key="mode" :label="mode" :value="mode" />
+            </el-select>
+          </div>
+
+          <div class="form-group">
+            <label>Site d'application spécifique</label>
+            <el-select
+              v-model="medicamentDetailForm.applicationSite"
+              placeholder="Site d'application"
+              class="site-select"
+              filterable
+              allow-create
+            >
+              <el-option v-for="site in applicationSiteOptions" :key="site" :label="site" :value="site" />
+            </el-select>
+          </div>
+
+          <div class="form-group">
+            <label>Unité</label>
+            <el-select
+              v-model="medicamentDetailForm.unit"
+              placeholder="Sélectionnez une unité"
+              class="unit-select"
+              filterable
+              allow-create
+            >
+              <el-option v-for="unit in unitOptions" :key="unit" :label="unit" :value="unit" />
+            </el-select>
+          </div>
+
+          <div class="form-group">
+            <label>Fréquence</label>
+            <div class="button-grid">
+              <button
+                v-for="option in frequencyOptions"
+                :key="option"
+                :class="['option-button', { active: medicamentDetailForm.frequency.includes(option) }]"
+                @click="toggleFrequency(option)"
+              >
+                {{ option }}
               </button>
             </div>
           </div>
-        </div>
 
-        <!-- Comments -->
-        <div class="form-group">
-          <label>Instructions spéciales</label>
-          <el-select v-model="modalForm.comment" placeholder="Sélectionner instructions" filterable multiple
-            allow-create :clearable="true" class="w-full">
-            <el-option v-for="comment in commentOptions" :key="comment" :label="comment" :value="comment" />
-          </el-select>
-        </div>
+          <div class="form-group">
+            <label>Durée</label>
+            <div class="duration-container">
+              <el-input-number
+                v-model="medicamentDetailForm.durationValue"
+                :min="0"
+                controls-position="right"
+                class="duration-input"
+              />
+              <div class="button-grid duration-buttons">
+                <button
+                  v-for="unit in durationUnits"
+                  :key="unit"
+                  :class="['option-button', { active: medicamentDetailForm.durationUnit === unit }]"
+                  @click="medicamentDetailForm.durationUnit = unit"
+                >
+                  {{ unit }}
+                </button>
+              </div>
+            </div>
+          </div>
 
-        <!-- <div class="form-group">
-          <label>Contre-indications d'utilisation</label>
-          <el-select v-model="modalForm.contraindications" placeholder="Rechercher ou ajouter une contre-indication"
-            filterable allow-create @create="addContraindication" multiple>
-            <el-option v-for="contraindication in contraindicationOptions" :key="contraindication"
-              :label="contraindication" :value="contraindication" />
-          </el-select>
-        </div> -->
+          <div class="form-group">
+            <label>Contre-indications d'utilisation</label>
+            <el-select
+              v-model="medicamentDetailForm.contraindications"
+              placeholder="Rechercher ou ajouter une contre-indication"
+              filterable
+              allow-create
+              @create="addContraindication"
+              multiple
+            >
+              <el-option
+                v-for="contraindication in contraindicationOptions"
+                :key="contraindication"
+                :label="contraindication"
+                :value="contraindication"
+              />
+            </el-select>
+          </div>
+
+          <div class="form-group">
+            <label>Instructions spéciales</label>
+            <el-select
+              v-model="medicamentDetailForm.comment"
+              placeholder="Sélectionner instructions"
+              filterable
+              multiple
+              allow-create
+              :clearable="true"
+              class="w-full"
+            >
+              <el-option v-for="comment in commentOptions" :key="comment" :label="comment" :value="comment" />
+            </el-select>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Dialog Footer -->
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="showModal = false">Annuler</el-button>
-        <el-button type="primary" @click="handleSaveModalData">Enregistrer</el-button>
+        <el-button @click="showMedicamentDetailModal = false">Annuler</el-button>
+        <el-button type="primary" @click="saveOrdonnanceDetails">Enregistrer</el-button>
       </div>
     </template>
   </el-dialog>
-
-
-  
 </template>
 
 
@@ -1023,6 +1033,7 @@ function onBlur() {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-top: 10px;
 }
 
 .form-group label {
@@ -1168,6 +1179,23 @@ function onBlur() {
 
 .validate-btn .el-icon {
   font-size: 16px;
+}
+
+/* Add these new styles */
+.toggle-filters-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  color: var(--el-color-primary);
+}
+
+.toggle-icon {
+  transition: transform 0.3s ease;
+}
+
+.toggle-icon.is-active {
+  transform: rotate(180deg);
 }
 
 </style>

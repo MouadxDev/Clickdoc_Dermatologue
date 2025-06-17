@@ -4,15 +4,15 @@
     import {RendezVous} from '../../../core/Clients/RendezVous.ts'
     import { useRdvStore } from '../../../core/Data/stores/rendez-vous';
     import moment from 'moment';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import router from '../../router/index.ts';
+    import { ElMessage, ElMessageBox } from 'element-plus';
+    import router from '../../router/index.ts';
 
 
     const client = new RendezVous();
     const date : Ref<Date> =ref(new Date())
     const eventss :Ref<any> = ref([])
 	const loaded : Ref<boolean> = ref(false)
-    const loading :Ref<boolean> = ref(true);
+    const loading :Ref<boolean> = ref(true); 
     const util = useUtilStore();
     const store = useRdvStore();
     

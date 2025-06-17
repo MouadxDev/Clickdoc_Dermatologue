@@ -184,6 +184,7 @@ class PatientController extends Controller
     public function search(string $filter)
     {
 
-        return Patient::where("CIN","LIKE",$filter."%")->orWhere("phone","LIKE",$filter."%")->get()->take(3);
+        // return Patient::where("CIN","LIKE",$filter."%")->orWhere("phone","LIKE",$filter."%")->get()->take(3);
+        return Patient::where("CIN","LIKE",$filter."%")->orWhere("phone","LIKE",$filter."%")->orWhere("name","LIKE",$filter."%")->orWhere("surname","LIKE",$filter."%")->get()->take(3);
     }
 }

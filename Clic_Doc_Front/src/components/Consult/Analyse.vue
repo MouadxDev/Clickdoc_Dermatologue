@@ -12,7 +12,9 @@ const consult = useConsultStore();
 const demande: Ref<any> = ref({
     consultation_id: consult.consult,
     analyse_id: "",
+    new_analyse: null,
 });
+
 
 const demandes: Ref<any> = ref([]);
 const analyses: Ref<any> = ref([]);
@@ -34,11 +36,24 @@ const filteredAnalyses = computed(() => {
     );
 });
 
+
+
 async function getDemande() {
     return await demandeClient.getByConsult(consult.consult);
 }
 
 async function setDemande() {
+    const selectedId = demande.value.analyse_id;
+    const selectedAnalyse = analyses.value.find((a: any) => a.id === selectedId);
+
+    if (!selectedAnalyse && selectedId) {
+        // If it's a new analysis not found in the list, send as new_analyse
+        demande.value.new_analyse = selectedId;
+        demande.value.analyse_id = ""; // Clear ID since it's not a known one
+    } else {
+        demande.value.new_analyse = "";
+    }
+
     await demandeClient.add(demande.value);
     demandes.value = await getDemande();
     demande.value.analyse_id = "";
@@ -102,14 +117,16 @@ function openPrintModal() {
                             v-model="demande.analyse_id"
                             placeholder="Rechercher une analyse"
                             filterable
+                            allow-create
                         >
                             <el-option
                                 v-for="m in filteredAnalyses"
                                 :key="m.id"
                                 :value="m.id"
                                 :label="m.libelle"
-                                @click="async ()=>{await setDemande()}"
+                                
                             />
+                            <!-- @click="async ()=>{await setDemande()}" -->
                         </el-select>
                     </el-form-item>
                 </el-col>

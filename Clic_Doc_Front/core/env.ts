@@ -6,8 +6,8 @@ const ENV = {
     "VITE_BACKEND__new":"https://api.clickdoc.webredirect.org",
     "VITE_BACKEND_Download":"http://localhost:8001/api/files",
 
-    "VITE_BACKEND_API":"http://10.243.210.11:9000/api",
-    "VITE_BACKEND":"http://10.243.210.11:9000",
+    "VITE_BACKEND_API":"http://localhost:9000/api",
+    "VITE_BACKEND":"http://localhost:9000",
 
     "VITE_BACKEND_URL_AUTH":"/auth",
     "VITE_BACKEND_URL_INITIATE":"/initiate",

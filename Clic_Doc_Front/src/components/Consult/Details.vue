@@ -3,6 +3,7 @@ import { Ref, onBeforeMount, ref } from 'vue';
 import { Consultation } from '../../../core/Clients/Consult';
 import { useConsultStore } from '../../../core/Data/stores/consultation';
 import { ConstFiles } from '../../../core/Clients/ConstFiles'; // Your existing client
+import Textarea from 'primevue/textarea';
 
 const client = new Consultation();
 const constClient = new ConstFiles(); // Use your existing one
@@ -10,6 +11,7 @@ const consult = useConsultStore();
 
 const consultation: Ref<any> = ref({
   motif: [],
+  notes: [],
   isPrivate: false,
   isFinished: false,
 });
@@ -17,6 +19,7 @@ const consultation: Ref<any> = ref({
 const liste_motifs = ref<{ label: string; value: string }[]>([]);
 const more: Ref<any> = ref('');
 const loadingMotifs = ref(false);
+
 
 // API search when user types
 const fetchMotifs = async (query: string) => {
@@ -69,6 +72,15 @@ onBeforeMount(async () => {
 <template>
   <div class="container">
     <el-form label-position="top">
+
+      <el-form-item label="Notes">
+        <Textarea 
+        v-model="consultation.notes" 
+        style="width: 100%; height: 150px; padding-left: 15px;" 
+        
+        />
+      </el-form-item>
+
       <el-form-item label="Motifs">
         <el-select-v2
           v-model="consultation.motif"

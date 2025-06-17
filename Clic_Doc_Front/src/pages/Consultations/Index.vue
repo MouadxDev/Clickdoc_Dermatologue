@@ -5,6 +5,7 @@ import { ConsultationService } from '../../../core/Data/services/consultation';
 
 import { Consultation } from '../../../core/Clients/Consult';
 import { Patients } from '../../../core/Clients/Patients';
+import Tag from 'primevue/tag';
 
 const client = new Consultation();
 const service = new ConsultationService();
@@ -41,7 +42,8 @@ watch(filters, async () => {
 const fields =[
     {prop:'name',label:'Nom'},
     {prop:'surname',label:'Prénom'},
-    {prop:'motif',label:'Motif'}
+    {prop:'created_at_formatted',label:'Date'},
+    {prop:'motif',label:'Motif',tag:true}
 
 ]
 

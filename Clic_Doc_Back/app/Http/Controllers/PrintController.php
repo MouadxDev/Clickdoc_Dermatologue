@@ -64,29 +64,49 @@ class PrintController extends Controller
 
 
 
-    public function certificat($type, $id, $docteur)
-    {
-        $patient = Patient::where('uid', '=', $id)->first();
-        $user = User::find($docteur);
-
-        if ($user->role == 'Admin') {
-            $docteur = $user;
-        } else {
-            $docteur = User::where('entity_id', '=', $user->entity_id)->where('role', '=', 'doctor')->first();
-        }
-
-        $entite = Entite::find($docteur->entity_id);
-
-        if ($type == 'aptitude') {
-            return view('certificat-aptitude', ['patient' => $patient, 'docteur' => $docteur, 'entite' => $entite]);
-        }
-        if ($type == 'repos') {
-            return view('certificat-medical', ['patient' => $patient, 'docteur' => $docteur, 'entite' => $entite]);
-        }
-        if ($type == 'maladpro') {
-            return view('certificat-maladie-pro', ['patient' => $patient, 'docteur' => $docteur, 'entite' => $entite]);
-        }
-    }
+	public function certificat($type, $id, $docteur)
+	{
+		$patient = Patient::where('uid', '=', $id)->first();
+		$user = User::find($docteur);
+	
+		if ($user->role == 'Admin') {
+			$docteur = $user;
+		} else {
+			$docteur = User::where('entity_id', '=', $user->entity_id)->where('role', '=', 'doctor')->first();
+		}
+	
+		$entite = Entite::find($docteur->entity_id);
+	
+		// ✅ Retrieve branding file (same as imprimer)
+		$branding = DB::table('entity_branding')
+			->where('entity_id', $entite->id)
+			->select('file_path')
+			->first();
+	
+		$branding_file = $branding?->file_path;
+	
+		// ✅ Add to all view returns
+		$data = [
+			'patient' => $patient,
+			'docteur' => $docteur,
+			'entite' => $entite,
+			'branding_file' => $branding_file
+		];
+	
+		if ($type == 'aptitude') {
+			return view('certificat-aptitude', $data);
+		}
+		if ($type == 'repos') {
+			return view('certificat-medical', $data);
+		}
+		if ($type == 'maladpro') {
+			return view('certificat-maladie-pro', $data);
+		}
+	
+		// Optional: handle unknown type
+		abort(404, "Certificat type inconnu.");
+	}
+	
 
 	
 

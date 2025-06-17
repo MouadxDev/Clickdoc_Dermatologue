@@ -132,7 +132,7 @@
       const secondPage = document.getElementById('second-page');
       
       // A5 page height considering margins (approximate)
-      const firstPageHeightLimit = 350; // adjust based on your A5 size needs
+      const firstPageHeightLimit = 620; // adjust based on your A5 size needs
       
       let currentHeight = 0;
       let counter = 1;
@@ -180,9 +180,24 @@
         
         html += `<p class="ml-5 text-[14px]">`;
         
-        if (item.frequency) {
-          html += `${capitalizeFirstLetter(item.frequency)} `;
-        }
+          if (
+            item.frequency != null &&
+            item.frequency !== '' &&
+            item.frequency !== '[]'
+          ) {
+            html += `${capitalizeFirstLetter(item.frequency)} `;
+          }
+
+          let times = [];
+
+          if (item.matin) times.push(`Matin: ${item.matin}`);
+          if (item.midi) times.push(`Midi: ${item.midi}`);
+          if (item.soir) times.push(`Soir: ${item.soir}`);
+          if (item.au_coucher) times.push(`Coucher: ${item.au_coucher}`);
+
+          if (times.length > 0) {
+            html += `<span class="text-xs text-gray-700 ">${times.join(' · ')}</span>`;
+          }
         
         if (item.administration_mode) {
           const mode = item.administration_mode.toLowerCase();
@@ -196,6 +211,7 @@
             html += `sur ${mode} `;
           }
         }
+        
         
         if (item.application_site) {
           html += `, appliquer sur ${item.application_site.toLowerCase()} `;
@@ -214,7 +230,9 @@
         if (item.commentaire) {
           const comments = JSON.parse(item.commentaire);
           if (comments && comments.length > 0) {
-            html += `<p class="ml-5 italic">${comments}</p>`;
+            html += `<p class="ml-5 italic" style="word-break: break-word;
+                      overflow-wrap: break-word;
+                      white-space: normal;">${comments}</p>`;
           }
         }
         

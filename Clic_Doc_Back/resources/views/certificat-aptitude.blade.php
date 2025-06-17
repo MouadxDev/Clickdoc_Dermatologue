@@ -22,14 +22,14 @@
     }
 
     .a5-page {
-      background-image: url("https://clickdoc.webredirect.org/public/doc/ordonnance_01.jpg"); /* Change URL to your certificate template */
-      background-size: cover;
+      /* background-image: url("https://clickdoc.webredirect.org/public/doc/ordonnance_01.jpg"); */
+      background-size: contain;
       background-repeat: no-repeat;
-      background-position: top center;
-      width: 100%;
-      height: 100%;
+      background-position: center top;
+      width: 147mm;
+      height: 205mm;
+      position: relative;
       padding: 10mm;
-      padding-top: 191px;
       box-sizing: border-box;
     }
 
@@ -43,20 +43,20 @@
 
     .date {
       text-align: center;
-      margin-top: 10px;
+      margin-top: 150px;
       font-size: 12px;
       margin-bottom: 28px;
     }
 
     .certificate-content {
-      margin-top: 60px;
+      margin-top: 50px;
       font-size: 17px;
       line-height: 1.6;
       text-align: justify;
     }
 
     .signature {
-      margin-top: 200px;
+      margin-top: 65px;
       text-align: right;
       font-size: 13px;
       margin-right: 20px;
@@ -68,32 +68,40 @@
       }
     }
   </style>
+
+    @if(isset($branding_file))
+    <style>
+      .a5-page {
+         background-image: url('{{ $branding_file }}');
+      }
+    </style>
+  @endif
 </head>
 <body onload="window.print()">
   <div class="a5-page">
     <div class="date">
          <span id="currentDate"></span>
     </div>
-    
-    <div class="title">CERTIFICAT MÉDICAL</div>
+    <div class="title" style="padding-top: 10px;">CERTIFICAT MÉDICAL</div>
 
-    <div class="certificate-content">
-      <p>
-        Je soussigné(e), <strong>{{ $docteur->name }}</strong>, certifie avoir reçu ce jour
+    <div class="certificate-content" style="font-size: 18px; line-height: 1.8; text-align: justify;">
+      <p style="text-indent: 2em;">
+        Je soussigné(e), <str>{{ $docteur->name }}</str>, certifie avoir reçu ce jour&nbsp;
         @if(isset($patient))
           @if($patient->sex == 'M') M.
           @elseif($patient->sex == 'F') Mme
           @else Mlle
           @endif
         @endif
-        <b>{{ $patient->surname ?? '' }} {{ $patient->name ?? '' }}</b>,
-        CIN : <b>{{ $patient->CIN ?? '' }}</b>, à ma consultation.
+        <str>{{ $patient->surname ?? '' }} {{ $patient->name ?? '' }}</str>,
+        titulaire de la carte d’identité nationale &nbsp;<str>{{ $patient->CIN ?? '' }}</str>, en consultation médicale.
       </p>
-
-      <p style="margin-top: 20px;">
-        Ce certificat est délivré à l'intéressé(e) pour justifier son absence ce jour et servir et valoir ce que de droit.
+    
+      <p style="text-indent: 2em; margin-top: 1em;">
+        Le présent certificat est délivré à l’intéressé(e) pour justifier son absence en date d’aujourd’hui et servir et valoir ce que de droit.
       </p>
     </div>
+    
 
     <div class="signature">
       Signature : _______________________

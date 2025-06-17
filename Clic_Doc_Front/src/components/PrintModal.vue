@@ -72,7 +72,7 @@ defineExpose({
 
 <template>
   <div>
-    <el-dialog v-model="showModal" :title="title" width="80%">
+    <el-dialog v-model="showModal" :title="title" width="50%">
       <div style="display: flex; align-items: center; justify-content: center; width: 100%; position: relative;">
         <!-- Loading Spinner -->
         <div 
@@ -90,7 +90,7 @@ defineExpose({
           id="printIframe"
           ref="printFrame"
           :src="url"
-          style="width: 100%; height: 600px; border: none; max-width: 50%;"
+          style="width: 100%; height: 600px; border: none; max-width: 90%;"
           @load="onIframeLoad"
           @error="onIframeError"
         ></iframe>
@@ -101,9 +101,9 @@ defineExpose({
         <el-button 
           type="primary" 
           @click="printIframe"
-          :disabled="isLoading"
+          
         >
-          Imprimer
+          Imprimer / Actualiser
         </el-button>
       </template>
     </el-dialog>

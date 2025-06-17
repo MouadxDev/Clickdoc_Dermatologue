@@ -23,7 +23,7 @@
     }
 
     .a5-page {
-      background-image: url("https://clickdoc.webredirect.org/public/doc/ordonnance_01.jpg");
+      /* background-image: url("https://clickdoc.webredirect.org/public/doc/ordonnance_01.jpg"); */
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center top;
@@ -59,12 +59,12 @@
     .signature {
       text-align: right;
       font-size: 13px;
-      margin-top: 150px;
+      margin-top: 100px;
       margin-right: 30px;
     }
 
     .days-input {
-      border: none;
+      border: none !important;
       width: 50px;
       text-align: center;
       font-size: inherit;
@@ -145,6 +145,13 @@
   </style>
 
 </head>
+<?php if(isset($branding_file)): ?>
+<style>
+  .a5-page {
+     background-image: url('<?php echo e($branding_file, false); ?>');
+  }
+</style>
+<?php endif; ?>
 <body>
     <script src="
         https://cdn.jsdelivr.net/npm/n2words@1.21.0/dist/n2words.min.js
@@ -165,25 +172,25 @@
       <div class="title pb-[50px] ">CERTIFICAT MÉDICAL DE REPOS</div>
     </div>
 
-    <div class="content">
-      <p>
-        Je, soussigné(e) <strong><?php echo e($docteur->name, false); ?></strong>, certifie auni reçu ce jour du  <strong id="currentDate2" class=""></strong>
+    <div class="content" style="font-size: 18px; line-height: 1.8; text-align: justify;">
+      <p style="text-indent: 2em;">
+        Je, soussigné(e) <str><?php echo e($docteur->name, false); ?></str>, certifie avoir examiné ce jour, le <str id="currentDate2"></str>,
         <?php if(isset($patient)): ?>
           <?php if($patient->sex == 'M'): ?> M.
           <?php elseif($patient->sex == 'F'): ?> Mme
           <?php else: ?> Mlle
           <?php endif; ?>
         <?php endif; ?>
-        <strong><?php echo e($patient->surname, false); ?> <?php echo e($patient->name, false); ?></strong> et que son état de santé nécessite un repos de
-        <input type="number" class="days-input" id="daysField" readonly placeholder="____" />
-        jours <span id="daysWords" class="italic text-gray-600"></span>  à compter de ce jour.
-
-        </p>
-        
-      <p>
-        Ce certificat est délivré à l'intéressé pour servir et valoir ce que de droit.
+        <str><?php echo e($patient->surname, false); ?> <?php echo e($patient->name, false); ?></str>, et atteste que son état de santé nécessite un repos de
+        <input type="number" class="days-input" id="daysField" readonly placeholder="____" style="width: 60px; text-align: center;" />
+        jours&nbsp;<span id="daysWords" class="italic text-gray-600"></span> à compter de ce jour.
+      </p>
+    
+      <p style="text-indent: 2em; margin-top: 1em;">
+        Ce certificat est délivré à l'intéressé(e) pour servir et valoir ce que de droit.
       </p>
     </div>
+    
 
     <div class="signature">
       <p>Signature : _______________________</p>
