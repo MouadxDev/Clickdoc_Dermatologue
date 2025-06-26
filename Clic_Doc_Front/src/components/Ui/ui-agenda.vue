@@ -60,7 +60,7 @@
                 (value.statut == "postponed"
                     ? "reporté"
                     : value.statut == "salle attente"
-                    ? "salle d'attente"
+                    ? "Salle d'attente"
                     : value.statut == "planified"
                     ? "Planifié"
                     : value.statut == "canceled"

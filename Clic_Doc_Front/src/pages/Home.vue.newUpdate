@@ -1,0 +1,722 @@
+<script setup lang="ts">
+    import { useUtilStore } from '../../core/Data/stores/utilitaire';
+    import { WaitingList } from '../../core/Clients/WaitingList';
+    import { RendezVous } from '../../core/Clients/RendezVous';
+    import { Facture } from '../../core/Clients/Facture';
+    import { useRdvStore } from '../../core/Data/stores/rendez-vous';
+    import { Ref, onBeforeMount, ref , watch, reactive, computed } from 'vue';
+    import { Payment } from '../../core/Clients/Payment';
+    import { useRouter } from 'vue-router';
+    import axios from "axios"
+
+    const store = useUtilStore()
+    const rdvStore = useRdvStore()
+    const client = new WaitingList()
+    const factureClient = new Facture()
+    const paymentClient = new Payment()
+    const rdvClient = new RendezVous()
+    const patients : Ref<any> = ref([]);
+    const factures : Ref<any> = ref([]);
+    const patient : Ref<number> = ref(0);
+    const router = useRouter()
+    const fields =[
+        {prop:'surname',label:'Prénom'},
+        {prop:'name',label:'Nom'},
+        {prop:'type',label:'Type '},
+        {prop:'heure',label:'Heure '}
+    ]
+    const showEditModal = ref(false);
+    const rdv = reactive({
+        patient_id:"",
+        id:"",
+        heure:"",
+        statut:""
+    })
+    const long_banner = ref<any>(null)
+    const square_banner = ref<any>(null)
+    const heures = ["06:00","06:30","07:00","07:30","08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30","20:00"]
+    const RdvS : Ref<Array<any>> = ref([])
+    const report : Ref<any> = ref({
+        mca:0,
+        dca:0
+    })
+    const addPayment :Ref<boolean> = ref(false)
+    const facture_to_send :Ref<number> = ref(0)
+    const index_facture :Ref<number> = ref(0)
+    const paiement :Ref<any> = ref({
+        patient_id:0,
+        amount:0,
+        type:"Espèce"
+    })
+
+    async function getData () {
+        RdvS.value = await rdvClient.isToday();        
+    }
+    
+    async function getReports(){
+        const data = await paymentClient.getReport("")
+        report.value.mca = 0
+        data?.mca.forEach((element:any) => {
+            report.value.mca += element.amount
+        });
+        report.value.dca = 0
+        data?.dca.forEach((element:any) => {
+            report.value.dca += element.amount
+        });
+        report.value.wL = data.wL
+        report.value.patients = data.patients
+    }
+
+    const totalPaid = computed(() => {
+        return factures.value.reduce((total:number, facture:any) => {
+            return total + facture.total_paid;
+        }, 0);
+    });
+
+    const totalToPay = computed(() => {
+        return factures.value.reduce((total:number, facture:any) => {
+            if (facture.statut !== 'Payé en totalité') {
+                return total + facture.remaining_amount+facture.total_paid;
+            }
+            return total;
+        }, 0);
+    });
+
+    const remainingAmount = computed(() => {
+        return factures.value.reduce((total:number, facture:any) => {
+            if (facture.statut !== 'Payé en totalité') {
+                return total + facture.remaining_amount;
+            }
+            return total;
+        }, 0);
+    });
+
+    async function loadSitFinanciere(){
+        factures.value = await factureClient.getThings(patient.value);
+    }
+
+    async function getBanners ()
+    {
+        try {
+        const responseLong = await axios.get("https://directus.clickdoc.ma/publicity/items/long_banners?fields=*.*,image.*&sort=-id")
+        const responseSquare = await axios.get("https://directus.clickdoc.ma/publicity/items/long_banners?fields=*.*,image.*&sort=-id")
+        long_banner.value = responseLong.data.data[0]
+        square_banner.value = responseSquare.data.data[0]
+        }catch(error){
+            console.log("no banner")
+        }
+    }
+    async function saveFacture(){
+        await paymentClient.add(paiement.value)
+        paiement.value={
+            patient_id:0,
+            amount:0,
+            type:"Espèce",
+            facture_id:facture_to_send.value
+        }
+        await factureClient.update({id:facture_to_send.value,statut:factures.value[index_facture.value].statut})
+        addPayment.value=false
+        await loadSitFinanciere()
+    }
+    onBeforeMount(async ()=>{
+        await getData()
+        await getBanners()
+        await getReports()
+        patients.value = await factureClient.getAll();
+    })
+    
+    function changeState(index: number) {
+        index_facture.value = index;
+        paiement.value.patient_id = factures.value[index].patient_id;
+        facture_to_send.value = factures.value[index].id;
+        paiement.value.facture_id = factures.value[index].id;
+        
+        if (factures.value[index].statut === "Payé partiellement") {
+            addPayment.value = true;
+        } else if (factures.value[index].statut === "Payé en totalité") {
+            addPayment.value = true;
+            paiement.value.amount = factures.value[index].amount;
+        }
+    }
+
+    const actions = [
+        {
+            label: 'Edit',
+            icon: 'edit',
+            action: openEditModal
+        },
+        {
+            icon: "View",
+            text:"voir",
+            action: (n:any)=>{show(n.uid)}
+        }
+    ]
+
+    async function saveEdit() {
+        await rdvClient.update(rdv);
+        rdvStore.setTrigger(true);
+    }
+
+    function show(n:any)
+    {
+        router.push("/dossiers/"+n)
+    }
+
+    function openEditModal(rowData) {
+        rdv.heure = rowData.heure
+        rdv.statut = rowData.statut
+        rdv.id = rowData.rdv_id
+        rdv.date = rowData.date
+        rdv.patient_id = rowData.patient_id
+        rdv.page = 1
+        rdv.toGet = 25
+        showEditModal.value = true;
+    }
+
+    watch(rdvStore, async (newState) => {
+        if(newState.trigger == true){
+            await getData()
+            rdvStore.setTrigger(false)
+        }
+    }, { deep: true})
+    
+    watch(rdvStore, async (newState) => {
+    if(newState.trigger == true){
+        await getData()
+        await getReports() 
+        rdvStore.setTrigger(false)
+    }
+}, { deep: true })
+
+watch(store, async (newState) => {
+    // If your store has a trigger or flag that indicates RDV was created
+    if(newState.rdvCreated || newState.dataChanged) {
+        await getReports()
+        await getData()
+        // Reset the flag if needed
+        // store.setRdvCreated(false)
+    }
+}, { deep: true })
+
+</script>
+
+<template>
+    <main-layout>
+        <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+            <!-- Header Section -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Tableau de Bord Médical</h1>
+                <p class="text-gray-600">Vue d'ensemble de votre pratique - {{ new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
+            </div>
+
+            <!-- Key Metrics Dashboard -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Monthly Revenue -->
+                <div class="bg-gradient-to-r from-green-400 to-green-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-green-100 text-sm font-medium">Chiffre d'Affaires Mensuel</p>
+                            <p class="text-3xl font-bold">{{ report.mca.toLocaleString() }} MAD</p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 p-3 rounded-full">
+                            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daily Revenue -->
+                <div class="bg-gradient-to-r from-blue-400 to-blue-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-blue-100 text-sm font-medium">Revenus d'Aujourd'hui</p>
+                            <p class="text-3xl font-bold">{{ report.dca.toLocaleString() }} MAD</p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 p-3 rounded-full">
+                            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Waiting Patients -->
+                <div class="bg-gradient-to-r from-orange-400 to-orange-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-orange-100 text-sm font-medium">Patients en Attente</p>
+                            <p class="text-3xl font-bold">{{ report.wL }}</p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 p-3 rounded-full">
+                            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Treated Patients -->
+                <div class="bg-gradient-to-r from-purple-400 to-purple-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-purple-100 text-sm font-medium">Patients Traités</p>
+                            <p class="text-3xl font-bold">{{ report.patients }}</p>
+                        </div>
+                        <div class="bg-white bg-opacity-20 p-3 rounded-full">
+                            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Banner Section -->
+            <div v-if="long_banner" class="mb-8">
+                <div 
+                    class="h-32 rounded-2xl shadow-lg overflow-hidden relative bg-cover bg-center"
+                    :style="`background-image: url(${long_banner.image.data.full_url})`"
+                >
+                    <a 
+                        :href="long_banner.link" 
+                        target="_blank" 
+                        class="absolute inset-0 bg-black bg-opacity-30 hover:bg-opacity-20 transition-all duration-300"
+                    ></a>
+                </div>
+            </div>
+
+            <!-- Main Content Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Waiting Room Section -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-2xl shadow-lg p-6 h-full">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center">
+                                <svg class="w-6 h-6 mr-2 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                                </svg>
+                                Salle d'Attente
+                            </h2>
+                            <span class="bg-orange-100 text-orange-800 text-sm font-medium px-3 py-1 rounded-full">
+                                {{ report.wL }} en attente
+                            </span>
+                        </div>
+                        <div class=" overflow-y-auto">
+                            <WaitingRoomVertical 
+                                :client="client" 
+                                :actions="actions"
+                                :triggerStore="useRdvStore"
+                                ref="waitingRoomRef"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agenda Section -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center">
+                                <svg class="w-6 h-6 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                                </svg>
+                                Agenda du Jour
+                            </h2>
+                            <button 
+                                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center"
+                                @click="store.setRDV(true,'')"
+                            >
+                                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                                </svg>
+                                Nouveau RDV
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-2xl shadow-lg p-6 max-h-[650px] overflow-auto">
+                        <ui-agenda />
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Financial & Tasks Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                <!-- Financial Situation -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zM14 6a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2h6zM4 14a2 2 0 002 2h8a2 2 0 002-2v-2H4v2z"/>
+                        </svg>
+                        Situations Financières
+                    </h2>
+                    
+                    <!-- Patient Selection -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Sélectionner un Patient</label>
+                        <el-select 
+                            class="w-full" 
+                            v-model="patient" 
+                            @change="loadSitFinanciere()"
+                            placeholder="Choisir un patient..."
+                            size="large"
+                        >
+                            <el-option :value="0" label="Aucun Patient sélectionné" />
+                            <el-option 
+                                v-for="p in patients" 
+                                :key="p.id"
+                                :value="p.id" 
+                                :label="`${p.surname} ${p.name} (${p.CIN})`" 
+                            />
+                        </el-select>
+                    </div>
+
+                    <!-- Financial Summary Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" v-if="patient > 0">
+                        <div class="bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-xl p-4">
+                            <div class="text-emerald-700 text-sm font-medium">Total à Payer</div>
+                            <div class="text-2xl font-bold text-emerald-800">{{ totalToPay || 0 }} MAD</div>
+                        </div>
+                        <div class="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4">
+                            <div class="text-blue-700 text-sm font-medium">Total Payé</div>
+                            <div class="text-2xl font-bold text-blue-800">{{ totalPaid || 0 }} MAD</div>
+                        </div>
+                        <div class="bg-gradient-to-r from-red-50 to-red-100 border border-red-200 rounded-xl p-4">
+                            <div class="text-red-700 text-sm font-medium">Restant</div>
+                            <div class="text-2xl font-bold text-red-800">{{ remainingAmount || 0 }} MAD</div>
+                        </div>
+                    </div>
+
+                    <!-- Invoice Table -->
+                    <div v-if="patient > 0 && factures.length > 0" class="overflow-hidden rounded-lg border border-gray-200">
+                        <el-table :data="factures" stripe style="width: 100%">
+                            <el-table-column label="Montant" prop="amount" width="120">
+                                <template #default="scope">
+                                    <span class="font-semibold">{{ scope.row.amount }} MAD</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="Statut de Paiement">
+                                <template #default="scope">
+                                    <el-select 
+                                        v-model="scope.row.statut" 
+                                        @change="changeState(scope.$index)" 
+                                        :disabled="factures[scope.$index].statut === 'Payé en totalité'"
+                                        size="small"
+                                    >
+                                        <el-option value="Non Payé" label="Non Payé" />
+                                        <el-option value="Payé en totalité" label="Payé en totalité" />
+                                        <el-option value="Payé partiellement" label="Payé partiellement" />
+                                    </el-select>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </div>
+
+                    <div v-else-if="patient > 0" class="text-center py-8 text-gray-500">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        <p>Aucune facture trouvée pour ce patient</p>
+                    </div>
+                </div>
+
+                <!-- Tasks Section -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        Tâches à Effectuer
+                    </h2>
+                    <tasks />
+                </div>
+            </div>
+
+            <!-- Payment Modal -->
+            <el-dialog 
+                v-model="addPayment" 
+                title="Enregistrer un Paiement"
+                width="500px"
+                :show-close="true"
+            >
+                <div class="space-y-6">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h4 class="font-medium text-blue-800 mb-2">Détails du Paiement</h4>
+                        <p class="text-sm text-blue-600">Enregistrez le montant reçu et le mode de paiement</p>
+                    </div>
+                    
+                    <el-form v-model="paiement" label-position="top">
+                        <el-form-item label="Montant Reçu (MAD)">
+                            <el-input 
+                                v-model="paiement.amount" 
+                                :disabled="factures[index_facture]?.statut=='Payé en totalité'"
+                                size="large"
+                                placeholder="Montant en MAD"
+                            />
+                        </el-form-item>
+                        <el-form-item label="Mode de Paiement">
+                            <el-select class="w-full" v-model="paiement.type" size="large">
+                                <el-option value="Espèce" label="💵 Espèces" />
+                                <el-option value="Chèque" label="🏦 Chèque" />
+                                <el-option value="Carte bancaire" label="💳 Carte Bancaire" />
+                            </el-select>
+                        </el-form-item>
+                    </el-form>
+                </div>
+                
+                <template #footer>
+                    <div class="flex justify-end space-x-3">
+                        <button 
+                            class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                            @click="addPayment = false"
+                        >
+                            Annuler
+                        </button>
+                        <button 
+                            class="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors"
+                            @click="saveFacture()"
+                        >
+                            Enregistrer le Paiement
+                        </button>
+                    </div>
+                </template>
+            </el-dialog>
+            
+            <!-- Edit Appointment Modal -->
+            <el-dialog 
+                v-model="showEditModal" 
+                title="Modifier le Rendez-vous"
+                width="600px"
+            >
+                <div class="space-y-6">
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <h4 class="font-medium text-amber-800 mb-2">Modification du Rendez-vous</h4>
+                        <p class="text-sm text-amber-600">Ajustez l'horaire ou le statut du rendez-vous</p>
+                    </div>
+                    
+                    <el-form label-position="top">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <el-form-item label="Heure du Rendez-vous">
+                                <el-select class="w-full" v-model="rdv.heure" size="large">
+                                    <el-option v-for="h in heures" :key="h" :value="h" :label="h" />
+                                </el-select>
+                            </el-form-item>
+                            
+                            <el-form-item label="Statut du Rendez-vous">
+                                <el-select class="w-full" v-model="rdv.statut" size="large"> 
+                                    <el-option value="salle attente" label="🟡 Salle d'attente" />
+                                    <el-option value="canceled" label="🔴 Rendez-vous annulé" />
+                                    <el-option value="honored" label="🟢 Rendez-vous honoré" />
+                                    <el-option value="planified" label="🔵 Rendez-vous planifié" />
+                                    <el-option value="postponed" label="🟠 Rendez-vous reporté" />
+                                </el-select>
+                            </el-form-item>
+                        </div>
+                    </el-form>
+                </div>
+                
+                <template #footer>
+                    <div class="flex justify-end space-x-3">
+                        <button 
+                            class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                            @click="showEditModal = false"
+                        >
+                            Annuler
+                        </button>
+                        <button 
+                            class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+                            @click="async () => {await saveEdit(); showEditModal = false;}"
+                        >
+                            Sauvegarder
+                        </button>
+                    </div>
+                </template>
+            </el-dialog>
+        </div>
+    </main-layout>
+</template>
+
+<style scoped>
+/* Custom scrollbar styling */
+.overflow-y-auto::-webkit-scrollbar {
+    width: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Custom transitions for cards */
+.bg-white {
+    transition: all 0.3s ease;
+}
+
+.bg-white:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Loading states */
+.loading-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .grid-cols-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .lg\:col-span-2 {
+        grid-column: span 1;
+    }
+    
+    .lg\:col-span-1 {
+        grid-column: span 1;
+    }
+}
+
+/* Enhanced form styling */
+.el-select, .el-input {
+    border-radius: 8px !important;
+}
+
+.el-button {
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+}
+
+/* Status indicators */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-paid {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.status-partial {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.status-unpaid {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+/* Animation for metrics cards */
+.metric-card {
+    animation: slideInUp 0.6s ease-out;
+}
+
+.metric-card:nth-child(1) { animation-delay: 0.1s; }
+.metric-card:nth-child(2) { animation-delay: 0.2s; }
+.metric-card:nth-child(3) { animation-delay: 0.3s; }
+.metric-card:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Enhanced table styling */
+.el-table {
+    border-radius: 8px !important;
+    overflow: hidden;
+}
+
+.el-table th {
+    background-color: #f8fafc !important;
+    color: #374151 !important;
+    font-weight: 600 !important;
+}
+
+/* Quick action buttons */
+.quick-action {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.quick-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Alert styling */
+.alert {
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.alert-info {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+}
+
+.alert-success {
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+}
+
+.alert-warning {
+    background-color: #fffbeb;
+    border: 1px solid #fed7aa;
+    color: #92400e;
+}
+
+.alert-error {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+</style>

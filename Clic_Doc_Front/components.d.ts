@@ -24,6 +24,7 @@ declare module 'vue' {
     Consultations: typeof import('./src/components/Folder/Consultations.vue')['default']
     Details: typeof import('./src/components/Consult/Details.vue')['default']
     Diagnostic: typeof import('./src/components/Consult/Diagnostic.vue')['default']
+    DocumentGenerator: typeof import('./src/components/DocumentGenerator.vue')['default']
     EditEDV: typeof import('./src/components/Utilitaires/EditEDV.vue')['default']
     EditPatient: typeof import('./src/components/Utilitaires/EditPatient.vue')['default']
     ExamenPhysique: typeof import('./src/components/Consult/ExamenPhysique.vue')['default']
@@ -50,5 +51,6 @@ declare module 'vue' {
     UiSheet: typeof import('./src/components/Ui/ui-sheet.vue')['default']
     UiTable: typeof import('./src/components/Ui/ui-table.vue')['default']
     UiVoice: typeof import('./src/components/Ui/ui-voice.vue')['default']
+    WaitingRoomVertical: typeof import('./src/components/WaitingRoomVertical.vue')['default']
   }
 }

@@ -48,6 +48,7 @@ const systemLabels = [
 // Computed property to determine which logic to use
 const isSpecialty1 = computed(() => Number(specialty) === 1);
 const isSpecialty2 = computed(() => Number(specialty) === 2);
+const isSpecialty3 = computed(() => Number(specialty) === 3);
 
 // Generic fetch function for different data types (specialty 1)
 const fetchData = async (query: string, dataType: string, targetArray: Ref<{ label: string; value: string }[]>, loadingRef: Ref<boolean>) => {
@@ -81,6 +82,24 @@ const fetchOnglesData = async (query: string) => {
 const fetchCheveuxData = async (query: string) => {
     await fetchData(query, 'data_cheveux', data_cheveux, loadingCheveux);
 };
+
+// Specific fetch functions for specialty 3
+const fetchEarOptions = async (query: string) => {
+    await fetchData(query, 'data_ear', data_visage, loadingVisage);
+};
+
+const fetchNoseAndSinusOptions = async (query: string) => {
+    await fetchData(query, 'data_nose_and_sinus', data_corps, loadingCorps);
+};
+
+const fetchThroatAndPharynxOptions = async (query: string) => {
+    await fetchData(query, 'data_throat_and_pharynx', data_ongles, loadingOngles);
+};
+
+const fetchNeckOptions = async (query: string) => {
+    await fetchData(query, 'data_neck', data_cheveux, loadingCheveux);
+};
+
 
 // Fetch function for specialty 2
 async function fetchSystemOptions(
@@ -130,6 +149,16 @@ async function getExamenPhysique() {
             sys12: JSON.parse(data.visual_system),
         };
     }
+     else if (isSpecialty3.value) {
+        // Specialty 2 logic
+        return {
+            id:data.id,
+            hair : JSON.parse(data.hair),
+            nails : JSON.parse(data.nails),
+            face : JSON.parse(data.face),
+            body : JSON.parse(data.body)
+        };
+    }
     
     return { id: data.id };
 }
@@ -158,6 +187,9 @@ async function setExamenPhysique() {
         };
         await examenClient.update(payload);
     }
+     else if (isSpecialty3.value) {
+        await examenClient.update(examen.value);
+    }
     
     examen.value = await getExamenPhysique();
 }
@@ -181,6 +213,15 @@ onBeforeMount(async () => {
                 fetchSystemOptions("", `sys${index + 1}`, refArray)
             )
         );
+    }
+     else if (isSpecialty3.value) {
+        // Initialize specialty 2 data
+        await Promise.all([
+            fetchEarOptions(''),
+            fetchNoseAndSinusOptions(''),
+            fetchThroatAndPharynxOptions(''),
+            fetchNeckOptions('')
+        ]);
     }
 });
 </script>
@@ -284,6 +325,62 @@ onBeforeMount(async () => {
                 </el-form-item>
             </template>
         </template>
+
+        <template v-else-if="isSpecialty3">
+            <el-form-item label="OREILLE">
+                <el-select-v2
+                    v-model="examen.face"
+                    :options="data_visage"
+                    placeholder="Selectionner"
+                    multiple
+                    filterable
+                    class="w-full"
+                    clearable
+                    @change="async () => { await setExamenPhysique() }"
+                    :disabled="!consult.edit"
+                />
+            </el-form-item>
+            <el-form-item label="NEZ ET SINUS">
+                <el-select-v2
+                    v-model="examen.body"
+                    :options="data_corps"
+                    placeholder="Selectionner"
+                    multiple
+                    filterable
+                    class="w-full"
+                    clearable
+                    @change="async () => { await setExamenPhysique() }"
+                    :disabled="!consult.edit"
+                />
+            </el-form-item>
+            <el-form-item label="GORGE ET PHARYNX">
+                <el-select-v2
+                    v-model="examen.nails"
+                    :options="data_ongles"
+                    placeholder="Selectionner"
+                    multiple
+                    filterable
+                    class="w-full"
+                    clearable
+                    @change="async () => { await setExamenPhysique() }"
+                    :disabled="!consult.edit"
+                />
+            </el-form-item>
+            <el-form-item label="COU">
+                <el-select-v2
+                    v-model="examen.hair"
+                    :options="data_cheveux"
+                    placeholder="Selectionner"
+                    multiple
+                    filterable
+                    class="w-full"
+                    clearable
+                    @change="async () => { await setExamenPhysique() }"
+                    :disabled="!consult.edit"
+                />
+            </el-form-item>
+</template>
+
 
         <!-- Fallback for other specialties -->
         <template v-else>

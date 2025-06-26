@@ -19,17 +19,25 @@ const finalisation : any = reactive({
 })
 
 const renseign : Ref<boolean> = ref(false)
-const mesure :Ref<any> = ref({
-    taille:null,
-    poids:null,
-    tension:null
-})
+    const mesure :Ref<any> = ref({
+        taille:null,
+        poids:null,
+        tension:null,
+        fr_cardiaque:null,
+        saturation:null,
+        glyc:null,
+        temp:null,
+    })
 
-const mesure_rens :Ref<any> = ref({
-    taille:null,
-    poids:null,
-    tension:null
-})
+    const mesure_rens :Ref<any> = ref({
+        taille:null,
+        poids:null,
+        tension:null,
+        fr_cardiaque:null,
+        saturation:null,
+        glyc:null,
+        temp:null,
+    })
 const consultation : Ref<any> = ref({data:{}})
 
 const items:Array<Accordion> = [
@@ -85,9 +93,17 @@ async function renseigner(){
         mesure.value = await getMesure()
         renseign.value=false
         mesure_rens.value={
+        
         taille:null,
         poids:null,
-        tension:null
+        tension:null,
+        fr_cardiaque:null,
+        saturation:null,
+        glyc:null,
+        temp:null,
+ 
+
+    
     }
 }
 
@@ -183,6 +199,12 @@ onBeforeMount(async ()=>{
                                             <li> Taille :  <b>{{ mesure.taille }}</b></li>
                                             <li> Poids : <b>{{ mesure.poids }} </b></li>
                                             <li> Tension :  <b>{{ mesure.tension }}</b></li>
+
+                                            <li> Fréquence cardiaque :  <b>{{ mesure.fr_cardiaque }}</b></li>
+                                            <li> Saturation :  <b>{{ mesure.saturation }}</b></li>
+                                            <li> Glycémie :  <b>{{ mesure.gly }}</b></li>
+                                            <li> Température :  <b>{{ mesure.temp }}</b></li>
+                                            
                                             <li> Dernière saisie le <b>{{  moment(mesure.created_at).format("DD/MM/YYYY") }}</b>  </li>
                                             <li class="mt-2"> <button class="btn btn-sm btn-link btn-block text-clickdoc " @click="renseign=true" > Renseigner  </button> </li>
                                         </ul> 
@@ -205,6 +227,7 @@ onBeforeMount(async ()=>{
                                                         </template>
                                                     </el-input>
                                                 </el-form-item>
+
                                                 <el-form-item label="tension" >
                                                     <el-input v-model="mesure_rens.tension">
                                                         <template #append>
@@ -212,6 +235,42 @@ onBeforeMount(async ()=>{
                                                         </template>
                                                     </el-input>
                                                 </el-form-item>
+
+                                                <!-- Update -->
+                                                <el-form-item label="Fréquence cardiaque" >
+                                                    <el-input v-model="mesure_rens.fr_cardiaque">
+                                                        <template #append>
+                                                            bpm
+                                                        </template>
+                                                    </el-input>
+                                                </el-form-item>
+
+                                                <el-form-item label="Saturation" >
+                                                    <el-input v-model="mesure_rens.saturation">
+                                                        <template #append>
+                                                            %
+                                                        </template>
+                                                    </el-input>
+                                                </el-form-item>
+                                                
+                                                <el-form-item label="Glycémie" >
+                                                    <el-input v-model="mesure_rens.gly">
+                                                        <template #append>
+                                                            mmol/L
+                                                        </template>
+                                                    </el-input>
+                                                </el-form-item>
+                                                
+                                                <el-form-item label="Température corporelle" >
+                                                    <el-input v-model="mesure_rens.temp">
+                                                        <template #append>
+                                                            °C
+                                                        </template>
+                                                    </el-input>
+                                                </el-form-item>
+                                                
+                                           
+
                                                 <el-form-item>
                                                     <button class="btn btn-sm btn-block background-clickdoc btn-block" type="button" @click="async()=>await renseigner()" > Enregistrer </button>
                                                 </el-form-item>

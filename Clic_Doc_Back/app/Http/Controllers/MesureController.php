@@ -29,12 +29,20 @@ class MesureController extends Controller
     public function store(Request $request)
     {
         $m = new Mesure();
-        $m -> patient_id=request()->patient_id;
-        $m -> taille = request()->taille;
-        $m -> poids = request()->poids;
-        $m -> tension = request()->tension;
-        $m -> save();
-
+    
+        $m->patient_id    = $request->patient_id;
+        $m->taille        = $request->taille;
+        $m->poids         = $request->poids;
+        $m->tension       = $request->tension;
+    
+        // New fields
+        $m->fr_cardiaque  = $request->fr_cardiaque;
+        $m->saturation    = $request->saturation;
+        $m->glyc          = $request->glyc;
+        $m->temp          = $request->temp;
+    
+        $m->save();
+    
         return $m;
     }
 

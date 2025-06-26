@@ -22,6 +22,7 @@ import { useSocketStore } from '../../../core/Data/stores/socket';
 import { useUtilStore } from '../../../core/Data/stores/utilitaire';
 import { useAuthStore } from '../../../core/Data/stores/auth';
 import ENV from '../../../core/env';
+import DocumentGenerator from '../../components/DocumentGenerator.vue';
 
     const route = useRoute()
     const ws = useSocketStore().socket
@@ -94,6 +95,8 @@ import ENV from '../../../core/env';
         },
         
     ]
+
+    
    
     const patient : Ref<any>  = ref({})
     const action = {
@@ -107,19 +110,31 @@ import ENV from '../../../core/env';
     const mesure :Ref<any> = ref({
         taille:null,
         poids:null,
-        tension:null
+        tension:null,
+        fr_cardiaque:null,
+        saturation:null,
+        glyc:null,
+        temp:null,
     })
 	
 	let result = [
         {'taille' : null},
         {'poids' : null},
-        {'tension' : null}
+        {'tension' : null},
+        {'fr_cardiaque' : null},
+        {'saturation' : null},
+        {'glyc' : null},
+        {'temp' : null},
     ];
     
     const mesure_rens :Ref<any> = ref({
         taille:null,
         poids:null,
-        tension:null
+        tension:null,
+        fr_cardiaque:null,
+        saturation:null,
+        glyc:null,
+        temp:null,
     })
 
     async function getPatient(){
@@ -161,7 +176,7 @@ import ENV from '../../../core/env';
         mesure.value = data[0];
 		
         result = data.reduce((acc, item) => {
-			['poids', 'taille', 'tension'].forEach(key => {
+			['poids', 'taille', 'tension' ,'fr_cardiaque','saturation','glyc','temp',].forEach(key => {
 				if (!acc[key]) {
 				acc[key] = [];
 				}
@@ -238,6 +253,7 @@ import ENV from '../../../core/env';
                             >
                             Facturation
                            </a>
+                           <DocumentGenerator :patient="patient" />
 						
 					</div>
                     <div class="rounded-2xl p-4 bg-white mt-3 shadow-xl" >
@@ -323,44 +339,78 @@ import ENV from '../../../core/env';
                                             <li> Taille :  <b>{{ mesure.taille }}</b></li>
                                             <li> Poids : <b>{{ mesure.poids }} </b></li>
                                             <li> Tension :  <b>{{ mesure.tension }}</b></li>
+                                            
+                                            <li> Fréquence cardiaque :  <b>{{ mesure.fr_cardiaque }}</b></li>
+                                            <li> Saturation :  <b>{{ mesure.saturation }}</b></li>
+                                            <li> Glycémie :  <b>{{ mesure.glyc }}</b></li>
+                                            <li> Température :  <b>{{ mesure.temp }}</b></li>
+
                                             <li> Dernière saisie le <b>{{  moment(mesure.created_at).format("DD/MM/YYYY") }}</b>  </li>
                                             <li class="mt-2"> <button class="btn btn-sm btn-link btn-block text-clickdoc " @click="renseign=true" > Renseigner  </button> </li>
                                         </ul> 
                                         <div class="p-4 text-center" v-else>
                                             <button class="btn btn-sm background-clickdoc " @click="renseign=true" > Renseigner </button>
                                         </div>
-                                        <el-dialog title="Renseigner mesures" v-model="renseign">
+                                        <el-dialog title="Renseigner mesures" v-model="renseign" @open="mesure_rens = { ...result }">
                                             <el-form label-position="top">
-                                                <el-form-item label="taille">
-													{{ result.taille }}
-                                                    <el-input v-model="mesure_rens.taille">
-                                                        <template #append>
-                                                            cm
-                                                        </template>
-                                                    </el-input>
+
+                                                <el-form-item label="Taille">
+                                                <el-input v-model="mesure_rens.taille" placeholder="Ex: 175">
+                                                    <template #append>cm</template>
+                                                </el-input>
+                                                <small class="text-muted">Valeur actuelle : {{ result.taille }} cm</small>
                                                 </el-form-item>
-                                                <el-form-item label="poids" >
-													{{ result.poids }}
-                                                    <el-input v-model="mesure_rens.poids">
-                                                        <template #append>
-                                                            KG
-                                                        </template>
-                                                    </el-input>
+
+                                                <el-form-item label="Poids">
+                                                <el-input v-model="mesure_rens.poids" placeholder="Ex: 70">
+                                                    <template #append>kg</template>
+                                                </el-input>
+                                                <small class="text-muted">Valeur actuelle : {{ result.poids }} kg</small>
                                                 </el-form-item>
-                                                <el-form-item label="tension" >
-													{{ result.tension }}
-                                                    <el-input v-model="mesure_rens.tension">
-                                                        <template #append>
-                                                            mmHG
-                                                        </template>
-                                                    </el-input>
+
+                                                <el-form-item label="Tension">
+                                                <el-input v-model="mesure_rens.tension" placeholder="Ex: 120/80">
+                                                    <template #append>mmHg</template>
+                                                </el-input>
+                                                <small class="text-muted">Valeur actuelle : {{ result.tension }} mmHg</small>
                                                 </el-form-item>
+
+                                                <el-form-item label="Fréquence cardiaque">
+                                                <el-input v-model="mesure_rens.fr_cardiaque" placeholder="Ex: 75">
+                                                    <template #append>bpm</template>
+                                                </el-input>
+                                                <small class="text-muted">Valeur actuelle : {{ result.fr_cardiaque }} bpm</small>
+                                                </el-form-item>
+
+                                                <el-form-item label="Saturation">
+                                                <el-input v-model="mesure_rens.saturation" placeholder="Ex: 98">
+                                                    <template #append>%</template>
+                                                </el-input>
+                                                <small class="text-muted">Valeur actuelle : {{ result.saturation }}%</small>
+                                                </el-form-item>
+
+                                                <el-form-item label="Glycémie">
+                                                    <el-input v-model="mesure_rens.glyc" placeholder="Ex: 5.2">
+                                                        <template #append>mmol/L</template>
+                                                    </el-input>
+                                                    <small class="text-muted">Valeur actuelle : {{ result.glyc }} mmol/L</small>
+                                                    </el-form-item>
+
+
+                                                <el-form-item label="Température corporelle">
+                                                <el-input v-model="mesure_rens.temp" placeholder="Ex: 37.0">
+                                                    <template #append>°C</template>
+                                                </el-input>
+                                                <small class="text-muted">Valeur actuelle : {{ result.temp }} °C</small>
+                                                </el-form-item>
+
                                                 <el-form-item>
-                                                    <button class="btn btn-sm btn-block background-clickdoc btn-block" type="button" @click="async()=>await renseigner()" > Enregistrer </button>
+                                                <el-button type="primary" @click="renseigner">Enregistrer</el-button>
                                                 </el-form-item>
 
                                             </el-form>
-                                        </el-dialog>
+                                            </el-dialog>
+
                                     </li>
                                 </ul>
                             </el-col>

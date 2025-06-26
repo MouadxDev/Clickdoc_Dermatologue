@@ -10,6 +10,8 @@ use App\Http\Controllers\EXLSExportController;
 use App\Http\Controllers\UploadController;
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\DocumentController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -47,3 +49,14 @@ Route::get('/recu/{payment_value}/{doctor_id}', [PrintController::class, 'genera
 
 Route::get('/patients/{doctor_id?}', [PatientController::class, 'displayPatients'])->name('patients_list.display');
 
+
+
+Route::prefix('documents')->group(function () {
+    Route::post('/generate', [DocumentController::class, 'generate']);
+    Route::get('/{documentType}', [DocumentController::class, 'view']);
+});
+
+// Keep existing certificate routes for backward compatibility
+Route::get('/certificat/aptitude/{patient_uid}/{doctor_id}', [DocumentController::class, 'certificatAptitude']);
+Route::get('/certificat/repos/{patient_uid}/{doctor_id}', [DocumentController::class, 'certificatRepos']);
+Route::get('/facturation/{patient_uid}/{doctor_id}', [DocumentController::class, 'facturation']);

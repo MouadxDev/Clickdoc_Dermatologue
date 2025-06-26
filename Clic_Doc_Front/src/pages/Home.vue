@@ -231,22 +231,18 @@
 			</div>  
             <el-row :gutter="10" class="mt-4">
                 <el-col :span="8">
-                    <div class="h-thing rounded-xl bg-white shadow p-4 ">
+                    <div class="h-thing rounded-xl bg-white shadow p-4" style="overflow: hidden;">
                         <el-row>
                             <el-col :span="24">
                                 <div class="font-bold text-xl"> Salle d'attente </div>
                             </el-col>
                         </el-row>
                         <div class="h-there mt-2 overflow-y-auto">
-                            <ui-table 
-                                :hasAvatar="true" 
+                            <WaitingRoomVertical 
                                 :client="client" 
-                                :fields="fields" 
                                 :actions="actions"
-                                :no-header="true"
-                                ref="table"
                                 :triggerStore="useRdvStore"
-                                :is-small="true"
+                                ref="waitingRoomRef"
                             />
                         </div>
                     </div>
