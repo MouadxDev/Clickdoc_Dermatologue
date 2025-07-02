@@ -1,6 +1,6 @@
 <?php
 namespace App\Services;
-
+use DateTime;
 use Carbon\Carbon;
 
 class DocumentGeneratorService
@@ -90,6 +90,9 @@ class DocumentGeneratorService
             case 'certificat-mariage-ar':
                 return $this->certificatMariageTemplate($data);
 
+            case 'certificat-mariage-ar-x01':
+                return $this->certificatMariageTemplate_x01($data);
+
             case 'lettre-avocat':
                 return $this->convocationAssuranceTemplate($data);
 
@@ -107,39 +110,43 @@ class DocumentGeneratorService
     protected function certificatAptitudeTemplate($data) 
     {
         $f = $data['form_data'];
-        $dob = date('d/m/Y', strtotime($data['patient_dob']));
+        $notes = $f['notes'] ?? "Constate, d’après l’examen clinique, qu’il/elle est indemne de toute affection contagieuse, invalidante, cardiaque ou mentale.";
+        
+        $dobRaw = $data['patient_dob'];
+        $dobDate = DateTime::createFromFormat('d/m/Y', $dobRaw) ?: DateTime::createFromFormat('Y-m-d', $dobRaw);
+        $dob = $dobDate ? $dobDate->format('d/m/Y') : '??';
+
         $today = date('d/m/Y');
     
         return "
-            <div style='
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100%;
-                min-height: 90vh;
-                font-family: Arial, sans-serif;
-                font-size: 13px;
-                padding: 0 10px;
-            '>
-                <div style='max-width: 460px; width: 100%;'>
-                    <div style='margin-bottom:30px'>
-                        <h3 style='text-align: center; margin: 4px 0;'>CERTIFICAT MÉDICAL D’APTITUDE PHYSIQUE</h3>
-                    </div>
-    
-                    <p style='margin: 6px 0;'><strong>NOM & PRÉNOM :</strong> {$data['patient_full_name']}</p>
-                    <p style='margin: 6px 0;'><strong>NÉ(E) LE :</strong> {$dob}</p>
-                    <p style='margin: 6px 0;'><strong>CARTE D’IMMATRICULATION :</strong> {$f['carte']}</p>
-    
-                    <p style='text-align: center; margin: 10px 0 4px;'><strong>EXAMEN MÉDICAL</strong></p>
-                    <p style='text-align: center; margin: 4px 0;'>JE SOUSSIGNÉ DR ABDELFETTAH IDRISSI KAITOUNI, EXPERT ASSERMENTÉ, CERTIFIE AVOIR EXAMINÉ CE JOUR : <strong>{$today}</strong></p>
-    
-                    <p style='text-align: center; margin: 10px 0 4px;'><strong>CONCLUSION</strong></p>
-                    <p style='margin: 4px 0; text-align: center;'>CONSTATE D’APRÈS L’EXAMEN CLINIQUE QU’IL/ELLE EST INDEMNE DE TOUTE AFFECTION CONTAGIEUSE, INVALIDANTE, CARDIAQUE OU MENTALE.</p>
-    
+        <div style='
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            min-height: 90vh;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            padding: 0 10px;
+        '>
+            <div style='max-width: 460px; width: 100%;'>
+                <div style='margin-bottom:30px'>
+                    <h3 style='text-align: center; margin: 4px 0;'>CERTIFICAT MÉDICAL D’APTITUDE PHYSIQUE</h3>
                 </div>
+    
+                <p style='text-align: center; margin: 10px 0 4px;'><strong>EXAMEN MÉDICAL</strong></p>
+                <p style='margin: 4px 0; text-align: justify;margin-top: 20px;'>
+                    Je soussigné, Dr AbdelFettah Idrissi Kaitouni, expert assermenté, certifie avoir examiné en ce jour du <strong>{$today}</strong> :
+                    <strong>{$data['patient_full_name']}</strong>, né(e) le <strong>{$dob}</strong>, titulaire de la carte d'immatriculation n° <strong>{$f['carte']}</strong>.
+                </p>
+    
+                <p style='margin: 10px 0 4px; text-align: justify;'>
+                    {$notes}
+                </p>
             </div>
-        ";
-    }
+        </div>
+    ";
+     }
     
     protected function certificatAptitudeEnTemplate($data)
     {
@@ -161,7 +168,7 @@ class DocumentGeneratorService
                     <h3 style='text-align: center; margin: 4px 0;margin-bottom: 25px;'>CERTIFICATE OF PHYSICAL FITNESS MEDICAL</h3>
     
                     <p style='margin: 10px 0;'>I UNDERSIGNED CERTIFIES HAVING REVIEWED SO FAR</p>
-    
+                    
                     <p><strong>MR / MISS:</strong> {$data['patient_full_name']}</p>
                     <p><strong>CIN:</strong> {$data['patient_cin']}</p>
     
@@ -188,7 +195,8 @@ class DocumentGeneratorService
     protected function certificatMariageTemplate($data)
     {
         $f = $data['form_data'];
-    
+        $notes = $f['notes'] ?? "إذن فهي قادرة على الزواج من الناحية الصحية.";
+        
         return "
         <div style='direction: rtl; font-family: \"Arial\", sans-serif; font-size: 15px; padding: 10px; line-height: 1.8;'>
             <div style='text-align: center; margin-bottom: 20px;margin-bottom: 80px;'>
@@ -199,6 +207,10 @@ class DocumentGeneratorService
                 <p>الهاتف : 0522932213</p>
             </div>
     
+            <h2 style='text-align: center;padding-bottom: 23px;'>
+            خبرة طبية للزواج
+            </h2>
+       
             <p>
                 أنا الموقع أسفله الدكتور عبدالفتاح إدريسي قيطوني، خبير محلف لدى المحاكم، أشهد أني فحصت يومه
                 <strong>{$f['date_exam']}</strong>
@@ -212,10 +224,60 @@ class DocumentGeneratorService
                 قادرة من الناحية الصحية على الممارسة الجنسية مع زوجها وعلى الوطء وعلى تحمل المسؤولية الزوجية وعلى الولادة.
             </p>
     
-            <p style='margin-top: 20px;'>إذن فهي قادرة على الزواج من الناحية الصحية.</p>
+            <b style='margin-top: 20px;'>{$notes}</b>
         </div>
         ";
     }
+    protected function certificatMariageTemplate_x01($data)
+    {
+        $f = $data['form_data'];
+        $name = $f['patient_name_ar'];
+        $sex = $f['sex'];
+        $date_exam = $f['date_exam'];
+        $notes = $f['notes'] ?? "";
+    
+        // Gender-based logic
+        if ($sex === 'أنثى') {
+            $requested_by = "بطلب منها المعنية";
+            $pronoun = "المعنية بالأمر لا تظهر عليها علامة لمرض معدٍ";
+            $delivered_to = "وسلمت لها هذه الشهادة للإدلاء بها قصد الزواج.";
+        } else {
+            $requested_by = "بطلب منه المعني";
+            $pronoun = "المعني بالأمر لا تظهر عليه علامة لمرض معدٍ";
+            $delivered_to = "وسلمت له هذه الشهادة للإدلاء بها قصد الزواج.";
+        }
+    
+        return "
+        <div style='direction: rtl; font-family: \"Arial\", sans-serif; font-size: 15px; padding: 10px; line-height: 1.8;'>
+            <div style='text-align: center; margin-bottom: 80px;'>
+                <h3>الدكتور عبد الفتاح إدريسي قيطوني</h3>
+                <p>خبير محلف لدى المحاكم</p>
+                <p>الطب العام</p>
+                <p>الفحص بالصدى</p>
+                <p>الهاتف : 0522932213</p>
+            </div>
+    
+            <h2 style='text-align: center; padding-bottom: 23px;'>شهادة طبية قصد الزواج</h2>
+    
+            <p>
+                أنا الموقع أسفله الدكتور عبد الفتاح إدريسي قيطوني، أشهد أني فحصت يومه <strong> {$date_exam}</strong> 
+                {$requested_by} <strong>{$name}</strong>
+            </p>
+               
+    
+            <p style='margin-top: 15px;'>
+                وتبين بعد الفحص السريري أن {$pronoun}.
+            </p>
+    
+            <p style='margin-top: 15px;'>
+                {$delivered_to}
+            </p>
+    
+            " . (!empty($notes) ? "<p style='margin-top: 20px; font-weight: bold;'>{$notes}</p>" : "") . "
+        </div>
+        ";
+    }
+    
     
 protected function convocationCourAppelTemplate($data)
 {
@@ -395,7 +457,7 @@ protected function convocationCourAppelTemplate($data)
                     margin: 0;
                     padding: 0;
                     box-sizing: border-box;
-                    font-size: 15px !important;
+                    font-size: 18px !important;
                 }
                 
                 body {

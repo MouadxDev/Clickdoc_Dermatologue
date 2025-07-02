@@ -253,6 +253,7 @@ import DocumentGenerator from '../../components/DocumentGenerator.vue';
                             >
                             Facturation
                            </a>
+                           
                            <DocumentGenerator :patient="patient" />
 						
 					</div>

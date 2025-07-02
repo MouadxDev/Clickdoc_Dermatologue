@@ -97,17 +97,19 @@ const documents = ref([
                     label: "Carte d'immatriculation",
                     type: 'text',
                     required: true
-                }
+                },
+                { name: 'notes', label: 'Note',default_value:"", type: 'textarea', required: false}
+
             ]
         },
         {
-        key: "certificat-arret-travail",
-        label: "CERTIFICAT MEDICAL ARRET DE TRAVAIL",
-        filename: "CERTIFICAT MEDICAL ARRET DE TRAVAIL.docx",
-        fields: [
-            { name: 'date_debut', label: 'Date de début', type: 'date', required: true },
-            { name: 'date_fin', label: 'Date de fin', type: 'date', required: true }
-        ]
+            key: "certificat-arret-travail",
+            label: "CERTIFICAT MEDICAL ARRET DE TRAVAIL",
+            filename: "CERTIFICAT MEDICAL ARRET DE TRAVAIL.docx",
+            fields: [
+                { name: 'date_debut', label: 'Date de début', type: 'date', required: true },
+                { name: 'date_fin', label: 'Date de fin', type: 'date', required: true }
+            ]
         },
         { 
   key: "certificat-aptitude-en", 
@@ -136,15 +138,6 @@ const documents = ref([
   ]
 },
 
-{
-    key: "certificat-mariage-ar",
-    label: "شهادة طبية للزواج",
-    filename: "شهادة طبية للزواج.docx",
-    fields: [
-        { name: 'patient_name_ar', label: 'اسم المعنية بالأمر', type: 'text', required: true, arabic: true },
-        { name: 'date_exam', label: 'تاريخ الفحص', type: 'date', required: true }
-    ]
-},
         { 
             key: "lettre-assurance", 
             label: "LETTRE A Cie D'ASSURANCE", 
@@ -200,6 +193,29 @@ const documents = ref([
                 }
             ]
         },
+        {
+            key: "certificat-mariage-ar-x01",
+            label: "شهادة طبية قصد الزواج",
+            filename: "شهادة طبية قصد الزواج.docx",
+            fields: [
+                { name: 'patient_name_ar', label: 'اسم المعني(ة) بالأمر', type: 'text', required: true, arabic: true },
+                { name: 'sex', label: 'الجنس', type: 'select', required: true, arabic: true, options: ['ذكر' , 'أنثى' ]},
+                { name: 'date_exam', label: 'تاريخ الفحص', type: 'date', required: true , arabic: true },
+                { name: 'notes', label: 'ملاحظات إضافية', default_value:"", type: 'textarea', required: false, arabic: true }
+            ]
+        },
+        {
+            key: "certificat-mariage-ar",
+            label: "خبرة طبية للزواج",
+            filename: "خبرة طبية للزواج.docx",
+            fields: [
+                { name: 'patient_name_ar', label: 'اسم المعنية بالأمر', type: 'text', required: true, arabic: true },
+                { name: 'date_exam', label: 'تاريخ الفحص', type: 'date', required: true , arabic: true },
+                { name: 'notes', label: 'ملاحظات إضافية',default_value:"", type: 'textarea', required: false, arabic: true }
+                
+            ]
+        },
+
         { 
             key: "insurance-letter-ar", 
             label: "رسالة لشركة تأمين", 
@@ -207,9 +223,9 @@ const documents = ref([
             fields: [
                 { name: 'compagnie', label: 'شركة التأمين', type: 'text', required: true, arabic: true },
                 { name: 'numero_dossier', label: 'رقم الملف', type: 'text', required: true, arabic: true },
-                { name: 'date_jugement', label: 'تاريخ الحكم', type: 'date', required: true },
-                { name: 'date_expertise', label: 'تاريخ الخبرة', type: 'date', required: true },
-                { name: 'heure', label: 'الساعة', type: 'text', required: true, arabic: true },
+                { name: 'date_jugement', label: 'تاريخ الحكم', type: 'date', required: true , arabic: true  },
+                { name: 'date_expertise', label: 'تاريخ الخبرة', type: 'date', required: true , arabic: true },
+                { name: 'heure', label: 'الساعة', type: 'text', required: true, arabic: true  },
                 { name: 'minute', label: 'الدقيقة', type: 'text', required: true, arabic: true },
                 { name: 'victime', label: 'اسم المعني/الضحية', type: 'text', required: true, arabic: true }
             ]
@@ -222,7 +238,9 @@ const documents = ref([
                 { name: 'cin', label: 'رقم بطاقة التعريف', type: 'text', required: true, arabic: true },
                 { name: 'notes', label: 'ملاحظات إضافية', type: 'textarea', required: false, arabic: true }
             ]
-        }
+        },
+        
+
     ])
 
 // Arabic keyboard layout
@@ -641,7 +659,9 @@ function closeDocumentPreview() {
     direction: rtl;
     font-family: 'Amiri', 'Tahoma', 'Arial Unicode MS', sans-serif;
     font-weight: bold;
+    width: 100% !important;
 }
+
 
 /* Fix input width and modal size */
 

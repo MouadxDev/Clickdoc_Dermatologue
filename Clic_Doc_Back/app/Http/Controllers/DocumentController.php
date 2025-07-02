@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Services\DocumentGeneratorService;
 use Illuminate\Support\Facades\Log;
 
+use Carbon\Carbon;
+
 class DocumentController extends Controller
 {
     protected $documentService;
@@ -49,15 +51,18 @@ class DocumentController extends Controller
         try {
             $patient = Patient::where('uid', $request->patient_uid)->first();
             $doctor = User::find($request->doctor_id);
-
+    
             if (!$patient || !$doctor) {
                 return response('Patient or Doctor not found', 404);
             }
-
+    
+            // 🔧 Normalize patient->date_of_birth if needed
+            $patient->date_of_birth = $this->normalizeDate($patient->date_of_birth);
+    
             // Merge form data from URL parameters
             $formData = $request->except(['patient_uid', 'doctor_id', 'auto_print']);
             $autoPrint = $request->get('auto_print', false);
-
+    
             $htmlContent = $this->documentService->generateHtmlDocument(
                 $documentType,
                 $patient,
@@ -65,14 +70,32 @@ class DocumentController extends Controller
                 $formData,
                 $autoPrint
             );
-
+    
             return response($htmlContent)->header('Content-Type', 'text/html');
-
+    
         } catch (\Exception $e) {
             Log::error('Document view error: ' . $e->getMessage());
             return response('Error generating document: ' . $e->getMessage(), 500);
         }
     }
+    protected function normalizeDate($rawDate)
+        {
+            if (!$rawDate) return null;
+
+            $formats = ['Y-m-d', 'd/m/Y', 'Y/m/d']; // Add others if needed
+
+            foreach ($formats as $format) {
+                try {
+                    return Carbon::createFromFormat($format, $rawDate)->format('Y-m-d');
+                } catch (\Exception $e) {
+                    continue;
+                }
+            }
+
+            // fallback if none match
+            return null;
+        }
+
 
     // Legacy certificate methods for backward compatibility
     public function certificatAptitude($patient_uid, $doctor_id)

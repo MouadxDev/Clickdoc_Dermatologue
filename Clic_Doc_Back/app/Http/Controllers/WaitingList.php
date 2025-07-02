@@ -12,33 +12,18 @@ class WaitingList extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index() 
+    
+    public function index()
     {
-        $entity_id = auth()->user()->entity_id;
-    
-        $wL = WL::whereDate("waiting_lists.created_at", Carbon::today())
-            ->where("state", "=", "waiting")
-            ->where("waiting_lists.entity_id", '=', $entity_id)
-            ->join("acte_medicals as a", "a.id", '=', "waiting_lists.type")
-            ->join("patients as p", "waiting_lists.patient_id", '=', "p.id")
-            ->leftJoin("rendez_vouses as r", function($join) {
-                $join->on("waiting_lists.created_at", "=", "r.created_at");
-            })
-            ->select(
-                "waiting_lists.*",
-                "p.name",
-                "p.surname",
-                "p.avatar",
-                "p.uid",
-                "a.libelle as type",
-                "r.heure"
-            );
-    
-        if (request()->has("toGet")) {
+        $wL = WL::whereDate("waiting_lists.created_at",Carbon::today());
+		$wL->where("state","=","waiting")->where("waiting_lists.entity_id",'=',auth()->user()->entity_id)
+			->join("acte_medicals as a","a.id",'=','waiting_lists.type')
+			-> join("patients as p",'waiting_lists.patient_id','=','p.id')
+        	->select("waiting_lists.*","p.name","p.surname","p.avatar","p.uid","a.libelle as type");
+        if(request()->has("toGet"))
             return $wL->paginate(request()->toGet);
-        }
-    
-        return [$wL->get(), $entity_id];
+        return [$wL::all(), $entity_id];
+        
     }
     
 
@@ -47,7 +32,9 @@ class WaitingList extends Controller
      */
     public function create()
     {
-        //
+
+        // 
+
     }
 
     /**
