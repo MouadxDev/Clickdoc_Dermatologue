@@ -93,6 +93,26 @@ export class Patients {
         }
     }
     
+    public async delete(uid:any) : Promise<any> {
+        try {
+            const response = await this.patientClient.delete("/"+uid)
+            ElMessage.success(response.data.message)
+            return {
+                status:response.status,
+                data:response.data
+            }
+        }
+        catch(error:any )
+        {
+            console.log(error)
+            ElMessage.error(error.response.data)
+            return {
+                status:error.status,
+                data:error.response.data
+            }
+        }
+    }
+    
     
 
 }

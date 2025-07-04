@@ -7,6 +7,7 @@ export const useUtilStore = defineStore("utilitaire", {
         dateRDV:"",
         Patient:false,
         editPatient:false,
+        deletePatient:false,
         patient_id:null,
         trigger:false,
       };
@@ -31,6 +32,10 @@ export const useUtilStore = defineStore("utilitaire", {
       setEditPatient(editPatient:boolean)
       {
         this.editPatient=editPatient
+      },
+      setDeletePatient(deletePatient:boolean)
+      {
+        this.deletePatient=deletePatient
       },
       setPatientID(patient_id:any)
       {

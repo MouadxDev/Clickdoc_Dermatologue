@@ -178,6 +178,7 @@ onBeforeMount(async ()=>{
                             </el-col>
                         </el-row>
                     </div>
+
                     <div class="rounded-2xl p-4 bg-white mt-3 shadow-xl" >
                         <div class="flex text-lg text-clickdoc">
                             <img src="https://clickdoc.webredirect.org/public/icons/mesure.png" class="h-6 w-6"> &nbsp;&nbsp;
@@ -199,7 +200,6 @@ onBeforeMount(async ()=>{
                                             <li> Taille :  <b>{{ mesure.taille }}</b></li>
                                             <li> Poids : <b>{{ mesure.poids }} </b></li>
                                             <li> Tension :  <b>{{ mesure.tension }}</b></li>
-
                                             <li> Fréquence cardiaque :  <b>{{ mesure.fr_cardiaque }}</b></li>
                                             <li> Saturation :  <b>{{ mesure.saturation }}</b></li>
                                             <li> Glycémie :  <b>{{ mesure.gly }}</b></li>
@@ -285,6 +285,10 @@ onBeforeMount(async ()=>{
                             </el-col>
                         </el-row>
                     </div>
+
+
+
+
                     <div class="rounded-2xl p-4 bg-white mt-3 shadow-xl" v-if="consultation.data.deets && consultation.data.deets.isFinished==0">
                         <button  class=" btn btn-error btn-block mb-2" @click="async () => { finalisation.isPrivate=true ; await saveConsultation()  }"> 
                             <el-icon>

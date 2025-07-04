@@ -38,6 +38,11 @@ const props = defineProps<{
   hasBack?: boolean | false;
   toRoute?: string | "";
   triggerStore?: StoreDefinition | any;
+  filter?: boolean | true;
+  filterKey?: string; // New prop for dynamic filtering
+  serverSideFilter?: boolean | false; // New prop to enable server-side filtering
+  searchMethod?: string; // New prop to specify search method name
+  useSearchMethod?: boolean | false; // New prop to use search method instead of getAll
 }>();
 
 const current_page = ref(1);
@@ -51,13 +56,36 @@ const router = useRouter();
 const data: any = ref({});
 const store = props.triggerStore != undefined ? props.triggerStore() : undefined;
 
-const filterText = ref(''); // New variable for filter input
+const filterText = ref(''); // Filter input
+const debounceTimer = ref<NodeJS.Timeout | null>(null); // For debouncing API calls
 
 // Computed property to filter data based on filterText
 const filteredData = computed(() => {
+  // If server-side filtering or search method is enabled, don't filter on frontend
+  if (props.serverSideFilter || props.useSearchMethod) {
+    return data.value.data || [];
+  }
+  
+  // Client-side filtering (existing logic)
   return data.value.data?.filter((item: any) =>
-    JSON.stringify(item).toLowerCase().includes(eventBus.filterText.toLowerCase())
+    JSON.stringify(item).toLowerCase().includes(filterText.value.toLowerCase())
   ) || [];
+});
+
+// Watch for filter text changes and trigger API call if server-side filtering is enabled
+watch(filterText, (newValue) => {
+  if (props.serverSideFilter || props.useSearchMethod) {
+    // Clear existing timer
+    if (debounceTimer.value) {
+      clearTimeout(debounceTimer.value);
+    }
+    
+    // Set new timer for debounced API call
+    debounceTimer.value = setTimeout(async () => {
+      current_page.value = 1; // Reset to first page when filtering
+      await getData();
+    }, 500); // 500ms delay
+  }
 });
 
 if (props.triggerStore != undefined) {
@@ -75,9 +103,92 @@ onBeforeMount(async () => {
 
 async function getData() {
   loading.value = true;
-  const toSend = { page: current_page.value, toGet: page_size.value, patient_id: patient_id };
+  
+  try {
+    // Check if we should use search method and filter text is provided
+    if (props.useSearchMethod && filterText.value.trim() !== '') {
+      const searchMethodName = props.searchMethod || 'search';
+      
+      // Call the search method
+      if (typeof client[searchMethodName] === 'function') {
+        const searchResult = await client[searchMethodName](filterText.value);
+        
+        // Handle different response formats
+        if (searchResult && typeof searchResult === 'object') {
+          // If search returns paginated data
+          if (searchResult.data && Array.isArray(searchResult.data)) {
+            data.value = searchResult;
+            current_page.value = searchResult.current_page || 1;
+            total.value = searchResult.total || searchResult.data.length;
+            page_size.value = searchResult.per_page || searchResult.data.length;
+          } 
+          // If search returns direct array or single object
+          else if (Array.isArray(searchResult)) {
+            data.value = {
+              data: searchResult,
+              current_page: 1,
+              total: searchResult.length,
+              per_page: searchResult.length
+            };
+            current_page.value = 1;
+            total.value = searchResult.length;
+            page_size.value = searchResult.length;
+          }
+          // If search returns single object
+          else {
+            const resultArray = [searchResult];
+            data.value = {
+              data: resultArray,
+              current_page: 1,
+              total: 1,
+              per_page: 1
+            };
+            current_page.value = 1;
+            total.value = 1;
+            page_size.value = 1;
+          }
+        }
+      } else {
+        console.error(`Search method '${searchMethodName}' not found in client`);
+        // Fallback to getAll
+        await getDataWithGetAll();
+      }
+    } else {
+      // Use normal getAll method when search is empty or useSearchMethod is false
+      await getDataWithGetAll();
+    }
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    // Fallback to empty data
+    data.value = {
+      data: [],
+      current_page: 1,
+      total: 0,
+      per_page: page_size.value
+    };
+  }
+  
+  loading.value = false;
+}
+
+async function getDataWithGetAll() {
+  const toSend = { 
+    page: current_page.value, 
+    toGet: page_size.value, 
+    patient_id: patient_id 
+  };
+  
   if (props.hasFilters == true) {
     Object.assign(toSend, props.filters);
+  }
+
+  // Add filter parameter if server-side filtering is enabled
+  if (props.serverSideFilter && filterText.value.trim() !== '') {
+    if (props.filterKey) {
+      toSend[props.filterKey] = filterText.value;
+    } else {
+      toSend['filter'] = filterText.value; // Default filter key
+    }
   }
 
   console.log(toSend);
@@ -85,7 +196,6 @@ async function getData() {
   current_page.value = data.value.current_page;
   total.value = data.value.total;
   page_size.value = data.value.per_page;
-  loading.value = false;
 }
 
 defineExpose({
@@ -152,8 +262,6 @@ defineExpose({
             &nbsp;&nbsp; Ajouter
           </el-button>
 
-      
-          
           <el-button
             size="small"
             link
@@ -196,19 +304,18 @@ defineExpose({
       </div>
     </div>
 
-
-
     <div class="rounded-2xl p-4 bg-white mt-3">
       <slot></slot>
-          <!-- Filter input for data table -->
+      <!-- Filter input for data table -->
       <el-input
-        v-model="eventBus.filterText"
+        v-model="filterText"
         id="filter_input"
-        placeholder="Tapez pour filtrer"
+        :placeholder="(props.serverSideFilter || props.useSearchMethod) ? 'Rechercher...' : 'Tapez pour filtrer'"
         class="pb-4"
         clearable
+       
       />
-    
+      
       <!-- Data table -->
       <el-table
         :height="props.isMain == true ? 'calc(100vh - 250px)' : 'calc(100vh - 350px)'"

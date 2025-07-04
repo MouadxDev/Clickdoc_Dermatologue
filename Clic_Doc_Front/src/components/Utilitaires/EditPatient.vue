@@ -37,17 +37,28 @@
 
     async function upload() {
         var formData = new FormData();
-        var file = document.querySelector('input[type=file]').files[0];
-        formData.append("file",file);
-        const resp = await uploadClient.add(formData)
-        isUploaded.value=true
-        patient.value.avatar=resp.data.full_path
+        const fileInput = document.querySelector('input[type=file]') as HTMLInputElement;
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+            var file = fileInput.files[0];
+            formData.append("file",file);
+            const resp = await uploadClient.add(formData)
+            isUploaded.value=true
+            patient.value.avatar=resp.data.full_path
+        }
     }
 
     async function add() {
         await client.update(patient.value)
         util.setEditPatient(false)
         store.setTrigger(true)
+    }
+
+    async function deletePatient() {
+        if (confirm('Êtes-vous sûr de vouloir supprimer ce patient ?')) {
+            await client.delete(util.patient_id)
+            util.setEditPatient(false)
+            store.setTrigger(true)
+        }
     }
 
     watch(util,async ()=>{
@@ -115,7 +126,6 @@
                                         format="DD/MM/YYYY"
                                         value-format="DD/MM/YYYY"
                                         class="w-full"
-                                        disabled
                                     />
                                 </el-form-item>
                             </el-col>
@@ -158,10 +168,35 @@
                             </el-col>
                         </el-row>
                         <div class="text-right">
-							
-                            <button class="btn background-clickdoc" type="button" @click="add()" >
-                                Enregistrer
-                            </button>
+                            <div class="flex items-center justify-end space-x-4 ">
+                                    <!-- Delete Button -->
+                                    <button 
+                                        class="group relative inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105 active:scale-95" 
+                                        type="button" 
+                                        @click="deletePatient()"
+                                    >
+                                        <svg class="w-4 h-4 mr-2 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                        Supprimer
+                                    </button>
+
+                                    <!-- Save Button -->
+                                    <button 
+    class="group relative inline-flex items-center justify-center px-8 py-3 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg" 
+    style="background: linear-gradient(135deg, #0092C5 0%, #00AAD8 100%); 
+           --tw-ring-color: #0092C5;"
+    onmouseover="this.style.background='linear-gradient(135deg, #007BA3 0%, #0088B6 100%)'"
+    onmouseout="this.style.background='linear-gradient(135deg, #0092C5 0%, #00AAD8 100%)'"
+    type="button" 
+    @click="add()"
+>
+    <svg class="w-4 h-4 mr-2 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+    </svg>
+    Enregistrer
+</button>
+                                </div>
                         </div>
                     </el-form>
                 </el-col>

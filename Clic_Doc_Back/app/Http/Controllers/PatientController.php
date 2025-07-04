@@ -178,7 +178,15 @@ class PatientController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $patient = Patient::where("uid", "=", $id)->first();
+        
+        if (!$patient) {
+            return response()->json(['message' => 'Patient not found'], 404);
+        }
+        
+        $patient->delete();
+        
+        return response()->json(['message' => 'Patient deleted successfully']);
     }
 
     public function search(string $filter)

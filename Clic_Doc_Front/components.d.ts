@@ -32,6 +32,7 @@ declare module 'vue' {
     FichePatient: typeof import('./src/components/Folder/FichePatient.vue')['default']
     Finance: typeof import('./src/components/Folder/Finance.vue')['default']
     Imagerie: typeof import('./src/components/Folder/Imagerie.vue')['default']
+    Newvidal: typeof import('./src/components/Newvidal.vue')['default']
     Observation: typeof import('./src/components/Consult/Observation.vue')['default']
     Ordonnance: typeof import('./src/components/Consult/Ordonnance.vue')['default']
     Ordonnances: typeof import('./src/components/Folder/Ordonnances.vue')['default']

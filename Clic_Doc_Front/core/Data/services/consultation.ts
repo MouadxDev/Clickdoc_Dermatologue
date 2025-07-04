@@ -20,6 +20,17 @@ export class ConsultationService {
         this.consultationStore.setEdit(true)
         this.router.push("/consultation");
     }
+    public async add_consultationWithoutRDV(request:any) {
+        const data :IResponse = await  this.client.add(request);
+        this.consultationStore.setConsult(data.data.consultation);
+        this.consultationStore.setUID(data.data.uid);
+        this.consultationStore.setPatientID(data.data.patient);
+        this.consultationStore.setExamenID(data.data.examen);
+        this.consultationStore.setDiagnosticID(data.data.diagnostic);
+        this.consultationStore.setObservationID(data.data.observation);
+        this.consultationStore.setEdit(true)
+        this.router.push("/consultation");
+    }
 
     public async get_consultation(consultation_id:number,edit:boolean) {
         const data :IResponse = await  this.client.getOne(consultation_id);

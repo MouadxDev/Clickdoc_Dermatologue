@@ -74,48 +74,54 @@ public function index()
     public function store(Request $request)
     {
         $consultation = new Consultation();
-        $consultation -> motif = request()->motif ; 
-        $consultation -> doctor_id = auth()->user()->id;
-        $consultation -> patient_id = request()->patient_id;
-        $consultation -> wl_id = request()->wl_id;
-        $consultation -> isPrivate = true;
-        $consultation -> save();
-
-        $consultation -> uid = "C".date("Y")."-".str_pad($consultation->id, 6, '0', STR_PAD_LEFT);;
-        $consultation -> save();
-
-        $wl = WaitingList::find(request()->wl_id);
-        $wl -> state = "onGoing";
-        $wl -> save();
-
+        $consultation->motif = $request->motif;
+        $consultation->doctor_id = auth()->user()->id;
+        $consultation->patient_id = $request->patient_id;
+        $consultation->wl_id = $request->wl_id; // will be 0 if no WL
+        $consultation->isPrivate = true;
+        $consultation->save();
+    
+        $consultation->uid = "C" . date("Y") . "-" . str_pad($consultation->id, 6, '0', STR_PAD_LEFT);
+        $consultation->save();
+    
+        // Skip waiting list logic if wl_id is 0
+        if ($request->wl_id != 0) {
+            $wl = WaitingList::find($request->wl_id);
+            if ($wl) {
+                $wl->state = "onGoing";
+                $wl->save();
+            }
+        }
+    
         $examen = new ExamenPhysique();
-        $examen -> consultation_id = $consultation->id;
-        $examen -> save();
-
+        $examen->consultation_id = $consultation->id;
+        $examen->save();
+    
         $diagnostic = new Diagnostic();
-        $diagnostic -> consultation_id = $consultation->id;
-        $diagnostic -> save();
-        
+        $diagnostic->consultation_id = $consultation->id;
+        $diagnostic->save();
+    
         $observation = new Observations();
-        $observation -> consultation_id = $consultation->id;
-        $observation -> save();
-
+        $observation->consultation_id = $consultation->id;
+        $observation->save();
+    
         $facture = new Facture();
-        $facture -> consultation_id = $consultation->id;
-        $facture -> uid = "F".date("Y")."-".str_pad($facture->id, 6, '0', STR_PAD_LEFT);;
-        $facture -> save();
-
-
+        $facture->consultation_id = $consultation->id;
+        $facture->uid = "F" . date("Y") . "-" . str_pad($facture->id, 6, '0', STR_PAD_LEFT);
+        $facture->save();
+    
         return [
-            "consultation"=>$consultation->id,
-            "uid"=>$consultation->uid,
-            "examen"=>$examen -> id,
-            "diagnostic"=>$diagnostic ->id ,
-            "observation"=>$observation ->id ,
-            "facture"=>$facture->id,
-            "patient"=>request()->patient_uid 
+            "consultation" => $consultation->id,
+            "uid" => $consultation->uid,
+            "examen" => $examen->id,
+            "diagnostic" => $diagnostic->id,
+            "observation" => $observation->id,
+            "facture" => $facture->id,
+            "patient" => $request->patient_uid
         ];
     }
+    
+    
 
     /**
      * Display the specified resource.

@@ -195,15 +195,29 @@ import DocumentGenerator from '../../components/DocumentGenerator.vue';
         ui.setFold(true)
     }
 
-    async function setConsult()
-    {
-        await service.add_consultation({
-            patient_id : patient.value.id,
-            wl_id:consultation.value.data.id,
-            motif:"[]",
-            patient_uid:patient.value.uid
-        })
+    async function setConsult() {
+    const consultationData = {
+        patient_id: patient.value?.id || "",
+        wl_id: consultation.value?.data?.id || "",
+        motif: "[]",
+        patient_uid: patient.value?.uid || ""
+    };
+    console.log(consultationData);
+    
+        await service.add_consultation(consultationData);
     }
+    async function setConsultWithoutRDV() {
+    const consultationData = {
+        patient_id: patient.value?.id || "",
+        wl_id: consultation.value?.data?.id || 0,
+        motif: "[]",
+        patient_uid: patient.value?.uid || ""
+    };
+    console.log(consultationData);
+    
+        await service.add_consultation(consultationData);
+    }
+
 
     watch(store, async (newState) => {
         if(newState.trigger == true){
@@ -353,64 +367,65 @@ import DocumentGenerator from '../../components/DocumentGenerator.vue';
                                             <button class="btn btn-sm background-clickdoc " @click="renseign=true" > Renseigner </button>
                                         </div>
                                         <el-dialog title="Renseigner mesures" v-model="renseign" @open="mesure_rens = { ...result }">
-                                            <el-form label-position="top">
+                                            <el-form label-position="top" class="grid grid-cols-2 gap-6">
 
-                                                <el-form-item label="Taille">
+                                                <el-form-item label="Taille" class="w-full">
                                                 <el-input v-model="mesure_rens.taille" placeholder="Ex: 175">
                                                     <template #append>cm</template>
                                                 </el-input>
                                                 <small class="text-muted">Valeur actuelle : {{ result.taille }} cm</small>
                                                 </el-form-item>
 
-                                                <el-form-item label="Poids">
+                                                <el-form-item label="Poids" class="w-full">
                                                 <el-input v-model="mesure_rens.poids" placeholder="Ex: 70">
                                                     <template #append>kg</template>
                                                 </el-input>
                                                 <small class="text-muted">Valeur actuelle : {{ result.poids }} kg</small>
                                                 </el-form-item>
 
-                                                <el-form-item label="Tension">
+                                                <el-form-item label="Tension" class="w-full">
                                                 <el-input v-model="mesure_rens.tension" placeholder="Ex: 120/80">
                                                     <template #append>mmHg</template>
                                                 </el-input>
                                                 <small class="text-muted">Valeur actuelle : {{ result.tension }} mmHg</small>
                                                 </el-form-item>
 
-                                                <el-form-item label="Fréquence cardiaque">
+                                                <el-form-item label="Fréquence cardiaque" class="w-full">
                                                 <el-input v-model="mesure_rens.fr_cardiaque" placeholder="Ex: 75">
                                                     <template #append>bpm</template>
                                                 </el-input>
                                                 <small class="text-muted">Valeur actuelle : {{ result.fr_cardiaque }} bpm</small>
                                                 </el-form-item>
 
-                                                <el-form-item label="Saturation">
+                                                <el-form-item label="Saturation" class="w-full">
                                                 <el-input v-model="mesure_rens.saturation" placeholder="Ex: 98">
                                                     <template #append>%</template>
                                                 </el-input>
                                                 <small class="text-muted">Valeur actuelle : {{ result.saturation }}%</small>
                                                 </el-form-item>
 
-                                                <el-form-item label="Glycémie">
-                                                    <el-input v-model="mesure_rens.glyc" placeholder="Ex: 5.2">
-                                                        <template #append>mmol/L</template>
-                                                    </el-input>
-                                                    <small class="text-muted">Valeur actuelle : {{ result.glyc }} mmol/L</small>
-                                                    </el-form-item>
+                                                <el-form-item label="Glycémie" class="w-full">
+                                                <el-input v-model="mesure_rens.glyc" placeholder="Ex: 5.2">
+                                                    <template #append>mmol/L</template>
+                                                </el-input>
+                                                <small class="text-muted">Valeur actuelle : {{ result.glyc }} mmol/L</small>
+                                                </el-form-item>
 
-
-                                                <el-form-item label="Température corporelle">
+                                                <el-form-item label="Température corporelle" class="w-full">
                                                 <el-input v-model="mesure_rens.temp" placeholder="Ex: 37.0">
                                                     <template #append>°C</template>
                                                 </el-input>
                                                 <small class="text-muted">Valeur actuelle : {{ result.temp }} °C</small>
                                                 </el-form-item>
 
-                                                <el-form-item>
+                                                <!-- The button should span both columns -->
+                                                <el-form-item class="col-span-2">
                                                 <el-button type="primary" @click="renseigner">Enregistrer</el-button>
                                                 </el-form-item>
 
                                             </el-form>
                                             </el-dialog>
+
 
                                     </li>
                                 </ul>
@@ -421,14 +436,21 @@ import DocumentGenerator from '../../components/DocumentGenerator.vue';
                         </el-row>
 
                     </div>
-                    <div class="rounded-2xl  p-4 bg-white mt-3 shadow-xl" v-if="consultation.status==true" >
-                        <button class="btn btn-block background-clickdoc mb-2" @click="notifier() ">
-                            Notifier l'acceuil
+                    <div class="rounded-2xl p-4 bg-white mt-3 shadow-xl" v-if="consultation.status == true">
+                        <button class="btn btn-block background-clickdoc mb-2" @click="notifier()">
+                            Notifier l'accueil
                         </button>
-                        <button class="btn btn-block background-clickdoc" @click="async ()=>{await setConsult()} ">
+                        <button class="btn btn-block background-clickdoc" @click="async () => { await setConsult() }">
                             Commencer la consultation
                         </button>
+                        </div>
+
+                    <div class="rounded-2xl p-4 bg-white mt-3 shadow-xl" v-else>
+                        <button class="btn btn-block background-clickdoc" @click="async () => { await setConsultWithoutRDV() }">
+                            Commencer la consultation sans RDV
+                        </button>
                     </div>
+
                 </el-col>
             </el-row>
         </div>
