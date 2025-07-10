@@ -268,7 +268,7 @@ import DocumentGenerator from '../../components/DocumentGenerator.vue';
                             Facturation
                            </a>
                            
-                           <DocumentGenerator  :patient="patient"  v-if="false" />
+                           <DocumentGenerator  :patient="patient"  v-if="true" />
 						
 					</div>
                     <div class="rounded-2xl p-4 bg-white mt-3 shadow-xl" >

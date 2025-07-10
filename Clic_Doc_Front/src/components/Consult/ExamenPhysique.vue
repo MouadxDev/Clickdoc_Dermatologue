@@ -333,6 +333,7 @@ onBeforeMount(async () => {
                     :options="data_visage"
                     placeholder="Selectionner"
                     multiple
+                    allow-create
                     filterable
                     class="w-full"
                     clearable
@@ -346,6 +347,7 @@ onBeforeMount(async () => {
                     :options="data_corps"
                     placeholder="Selectionner"
                     multiple
+                    allow-create
                     filterable
                     class="w-full"
                     clearable
@@ -359,6 +361,7 @@ onBeforeMount(async () => {
                     :options="data_ongles"
                     placeholder="Selectionner"
                     multiple
+                    allow-create
                     filterable
                     class="w-full"
                     clearable
@@ -372,6 +375,7 @@ onBeforeMount(async () => {
                     :options="data_cheveux"
                     placeholder="Selectionner"
                     multiple
+                    allow-create
                     filterable
                     class="w-full"
                     clearable

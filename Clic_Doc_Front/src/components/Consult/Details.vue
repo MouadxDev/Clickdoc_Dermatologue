@@ -11,7 +11,7 @@ const consult = useConsultStore();
 
 const consultation: Ref<any> = ref({
   motif: [],
-  notes: [],
+  notes: '',
   isPrivate: false,
   isFinished: false,
 });
@@ -19,7 +19,6 @@ const consultation: Ref<any> = ref({
 const liste_motifs = ref<{ label: string; value: string }[]>([]);
 const more: Ref<any> = ref('');
 const loadingMotifs = ref(false);
-
 
 // API search when user types
 const fetchMotifs = async (query: string) => {
@@ -36,7 +35,6 @@ const fetchMotifs = async (query: string) => {
     loadingMotifs.value = false;
   }
 };
-
 
 async function addMore() {
   consultation.value.motif.push(more.value);
@@ -57,6 +55,7 @@ async function setConsult() {
   await client.update({
     id: consult.consult,
     motif: JSON.stringify(consultation.value.motif),
+    notes: consultation.value.notes,
     isFinished: consultation.value.isFinished,
     isPrivate: consultation.value.isPrivate,
   });
@@ -67,17 +66,18 @@ async function setConsult() {
 onBeforeMount(async () => {
   consultation.value = await getConsultation();
   consultation.value.motif = JSON.parse(consultation.value.motif);
+  consultation.value.notes = consultation.value.notes || '';
 });
 </script>
+
 <template>
   <div class="container">
     <el-form label-position="top">
-
       <el-form-item label="Notes">
-        <Textarea 
-        v-model="consultation.notes" 
-        style="width: 100%; height: 150px; padding-left: 15px;" 
-        
+        <Textarea
+          v-model="consultation.notes"
+          style="width: 100%; height: 150px; padding-left: 15px;"
+          @blur="async () => await setConsult()"
         />
       </el-form-item>
 

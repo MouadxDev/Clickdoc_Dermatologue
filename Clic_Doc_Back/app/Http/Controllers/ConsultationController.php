@@ -168,21 +168,38 @@ public function index()
      */
     public function update(Request $request, string $id)
     {
+        // Find the consultation by ID
         $c = Consultation::find($id);
-        $c -> isPrivate = request()->isPrivate;
-		if(request()->has("motif"))
-		{	
-        	$c -> motif = request()->motif;
-        	$c -> isFinished = request()->isFinished;
-		}
-		else 
-        	$c -> isFinished = 1;
-		$c -> save();
-
-
-
-        return ["message"=>"Enregistré avec succès"] ;
+        
+        // Update the isPrivate flag
+        $c->isPrivate = $request->isPrivate;
+        
+        // Check if the 'motif' is provided in the request
+        if ($request->has('motif')) {
+            // If motif is an array and it's not empty, append to the existing motif array
+            $currentMotif = json_decode($c->motif, true); // Decode the current motif to array if it's stored as JSON
+            $newMotif = json_decode($request->motif, true); // Decode the incoming motif to array
+            $mergedMotif = array_merge($currentMotif, $newMotif); // Merge old and new motifs
+            
+            // Store the updated motif
+            $c->motif = json_encode(array_values(array_unique($mergedMotif))); // Remove duplicates if necessary
+        }
+        
+        // Update the isFinished flag, defaulting to 1 if not provided
+        $c->isFinished = $request->has('isFinished') ? $request->isFinished : 1;
+        
+        // Check if notes are provided and update the notes column
+        if ($request->has('notes')) {
+            $c->notes = $request->notes; // Update the notes field
+        }
+    
+        // Save the updated consultation
+        $c->save();
+    
+        // Return success message
+        return ["message" => "Enregistré avec succès"];
     }
+    
 
     /**
      * Remove the specified resource from storage.

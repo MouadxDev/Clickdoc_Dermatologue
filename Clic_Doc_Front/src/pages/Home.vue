@@ -26,12 +26,14 @@
         {prop:'heure',label:'Heure '}
     ]
     const showEditModal = ref(false);
+    
     const rdv = reactive({
         patient_id:"",
         id:"",
         heure:"",
         statut:""
     })
+
 	const long_banner = ref<any>(null)
 	const square_banner = ref<any>(null)
     const heures = ["06:00","06:30","07:00","07:30","08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30","20:00"]
@@ -157,11 +159,11 @@
             icon: "View",
             text:"voir",
             action: (n:any)=>{show(n.uid)}
-        }
+        },
     ]
 
     async function saveEdit() {
-        await rdvClient.update(rdv);
+        await rdvClient.update(rdv);        
         rdvStore.setTrigger(true);
     }
 
@@ -360,7 +362,7 @@
                     </el-row>
                     
                     <el-form-item>
-                    <button class="btn btn-sm btn-block background-clickdoc" type="button" @click="async () => {await saveEdit()}">Save</button>
+                        <button class="btn btn-sm btn-block background-clickdoc" type="button" @click="async () => {await saveEdit()}">Save</button>
                     </el-form-item>
                 </el-form>
             </el-dialog>
