@@ -14,38 +14,42 @@ use App\Models\WaitingList;
 
 class ConsultationController extends Controller
 {
-public function index()
-{
-    $consultation = Consultation::where("doctor_id", auth()->user()->id)
-        ->join("patients", "consultations.patient_id", "=", "patients.id")
-        ->join("users", "consultations.doctor_id", "=", "users.id");
-
-    if (request()->has("date")) {
-        $consultation->whereDate("consultations.created_at", request()->date);
+    public function index()
+    {
+        $consultation = Consultation::where("doctor_id", auth()->user()->id)
+            ->join("patients", "consultations.patient_id", "=", "patients.id")
+            ->join("users", "consultations.doctor_id", "=", "users.id");
+    
+        if (request()->has("date")) {
+            $consultation->whereDate("consultations.created_at", request()->date);
+        }
+    
+        if (request()->has("patient_id")) {
+            $consultation->where("patient_id", request()->patient_id);
+        }
+    
+        $consultation->select(
+            "consultations.*",
+            "patients.name",
+            "patients.surname",
+            "patients.avatar",
+            "users.name as docteur"
+        );
+    
+        // Reverse order by ID
+        $consultation->orderBy('consultations.id', 'desc');
+    
+        $paginated = $consultation->paginate(request()->toGet);
+    
+        // Format created_at
+        $paginated->getCollection()->transform(function ($item) {
+            $item->created_at_formatted = \Carbon\Carbon::parse($item->created_at)->format('Y-m-d H:i:s');
+            return $item;
+        });
+    
+        return $paginated;
     }
-
-    if (request()->has("patient_id")) {
-        $consultation->where("patient_id", request()->patient_id);
-    }
-
-    $consultation->select(
-        "consultations.*",
-        "patients.name",
-        "patients.surname",
-        "patients.avatar",
-        "users.name as docteur"
-    );
-
-    $paginated = $consultation->paginate(request()->toGet);
-
-    // Format created_at
-    $paginated->getCollection()->transform(function ($item) {
-        $item->created_at_formatted = \Carbon\Carbon::parse($item->created_at)->format('Y-m-d H:i:s');
-        return $item;
-    });
-
-    return $paginated;
-}
+    
 
 
     /**
@@ -107,6 +111,7 @@ public function index()
     
         $facture = new Facture();
         $facture->consultation_id = $consultation->id;
+        $facture->save();
         $facture->uid = "F" . date("Y") . "-" . str_pad($facture->id, 6, '0', STR_PAD_LEFT);
         $facture->save();
     
@@ -134,6 +139,7 @@ public function index()
         $patient = Patient::find($consultation->patient_id);
         $facture = Facture::where("consultation_id",'=',$id)->first() ;
         $observation = Observations::where("consultation_id",'=',$id)->first() ;
+
         if($facture == null)
         {
             $facture_id = null;

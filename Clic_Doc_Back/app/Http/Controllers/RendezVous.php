@@ -77,29 +77,50 @@ class RendezVous extends Controller
      */
     public function store(Request $request)
     {
-        if(auth()->user()->role=="Admin" OR auth()->user()->role=="doctor")
-            $doctor = auth()->user() ;
-        else 
-            $doctor = User::where("entity_id",'=',auth()->user()->entity_id)->whereIn("role",["Admin","doctor"]) -> first();
+        if (auth()->user()->role == "Admin" || auth()->user()->role == "doctor")
+            $doctor = auth()->user();
+        else
+            $doctor = User::where("entity_id", '=', auth()->user()->entity_id)
+                          ->whereIn("role", ["Admin", "doctor"])
+                          ->first();
+    
+        // Vérifie si le patient a déjà un rendez-vous ce jour-là
+        $exists = ModelsRendezVous::where('patient_id', $request->patient_id)
+            ->where('date', $request->date)
+            ->exists();
+    
+        if ($exists) {
+            return response()->json([
+                'error' => 'Ce patient a déjà un rendez-vous pour cette date.'
+            ], 400);
+        }
+    
+        // Création du nouveau rendez-vous
         $new = new ModelsRendezVous();
-        $new -> patient_id= request()->patient_id;
-        $new -> doctor_id= $doctor->id;
-        $new -> type= request()->type;
-        $new -> date= request()->date;
-        $new -> heure= request()->heure;
-        $new -> statut= request()->statut;
-		$new -> color = request()->color;
-        $new -> save() ; 
-
+        $new->patient_id = $request->patient_id;
+        $new->doctor_id = $doctor->id;
+        $new->type = $request->type;
+        $new->date = $request->date;
+        $new->heure = $request->heure;
+        $new->statut = $request->statut;
+        $new->color = $request->color;
+        $new->save();
+    
+        // Ajout dans la liste d'attente
         $wl = new WaitingList();
-        $wl -> patient_id = request()->patient_id;
-        $wl -> type = request()->type;
-        $wl -> doctor_id= $doctor->id;
-        $wl -> entity_id = auth()->user()->entity_id;
-        $wl -> state = "waiting";
-        $wl -> created_at = Carbon::createFromFormat('d/m/Y', $request->date)->timestamp;
-        $wl -> save();
+        $wl->patient_id = $request->patient_id;
+        $wl->type = $request->type;
+        $wl->doctor_id = $doctor->id;
+        $wl->entity_id = auth()->user()->entity_id;
+        $wl->state = "waiting";
+        $wl->created_at = Carbon::createFromFormat('d/m/Y', $request->date)->timestamp;
+        $wl->save();
+    
+        return response()->json([
+            'success' => 'Le rendez-vous a été créé avec succès.'
+        ]);
     }
+    
 
     /**
      * Display the specified resource.
@@ -137,7 +158,7 @@ class RendezVous extends Controller
         $rendez_vous = ModelsRendezVous::find($id);
         $oldStat = $rendez_vous->statut;
         $rendez_vous -> statut =request()->statut;
-		$rendez_vous -> heure = request()->heure;
+        $rendez_vous->heure = $request->heure ?? '00:00'; 
         $rendez_vous -> save();
         if(request()->statut=="postponed")
         {
@@ -146,7 +167,7 @@ class RendezVous extends Controller
             $new -> doctor_id= $rendez_vous->doctor_id ;
             $new -> type= $rendez_vous->type;
             $new -> date= request()->date;
-            $new -> heure= request()->heure;
+            $new -> heure= request()->heure ?? '00:00';
             $new -> statut= $oldStat;
             $new -> save() ; 
 
@@ -168,13 +189,22 @@ class RendezVous extends Controller
      */
     public function destroy(string $id)
     {
-        $rendez_vous = ModelsRendezVous::find($id);
-        if ($rendez_vous) {
-            $rendez_vous->delete();
-            return response()->json(['message' => 'Rendez-vous supprimé avec succès.'], 200);
-        } else {
-            return response()->json(['message' => 'Rendez-vous introuvable.'], 404);
+        $rendezVous = ModelsRendezVous::find($id);
+    
+        if ($rendezVous) {
+            $rendezVous->delete();
+            return response()->json(['message' => 'Supprimé avec succès.'], 200);
         }
+    
+        $waitingList = WaitingList::find($id);
+    
+        if ($waitingList) {
+            $waitingList->delete();
+            return response()->json(['message' => 'Patient retiré de la salle d’attente.'], 200);
+        }
+    
+        return response()->json(['message' => 'Aucun rendez-vous ou patient en salle d’attente trouvé.'], 404);
     }
+    
     
 }

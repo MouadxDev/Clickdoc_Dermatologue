@@ -153,17 +153,22 @@ const filteredConsultations = computed(() => {
     const motifs = parseMotifs(consultation.motif);
     const matchesMotif = motifs.some(motif => motif.toLowerCase().includes(searchTerm));
     
-    // Check medications (assuming it's an array of strings)
+    // Check notes (plain text with line breaks)
+    const notes = consultation.notes ? consultation.notes.split('\n') : [];
+    const matchesNotes = notes.some(note => note.toLowerCase().includes(searchTerm));
+    
+    // Check medications
     const meds = consultation.medications || [];
     const matchesMedications = meds.some(med => med.toLowerCase().includes(searchTerm));
     
-    // (Optional) Check analyses too, if you want
+    // Check analyses
     const analyses = consultation.analyses || [];
     const matchesAnalyses = analyses.some(analysis => analysis.toLowerCase().includes(searchTerm));
     
-    return matchesMotif || matchesMedications || matchesAnalyses;
+    return matchesMotif || matchesMedications || matchesAnalyses || matchesNotes;
   });
 });
+
 
 
 // Get avatar initials as fallback
@@ -279,6 +284,15 @@ watchEffect(() => {
               </div>
               
               <div class="consultation-body">
+                <!-- Notes -->
+                <div class="consultation-section">
+                  <h4>Notes</h4>
+                  <div v-if="consultation.notes && consultation.notes.trim() !== ''" class="notes-container">
+                      <p class="preformatted-text">{{ consultation.notes }}</p>
+                  </div>
+                  <div v-else class="empty-field">Aucune note spécifiée</div>
+              </div>
+
                 <!-- Motifs -->
                 <div class="consultation-section">
                   <h4>Motifs</h4>
@@ -738,5 +752,10 @@ watchEffect(() => {
     right: auto;
     top: -30px;
   }
+}
+.preformatted-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.6;
 }
 </style>

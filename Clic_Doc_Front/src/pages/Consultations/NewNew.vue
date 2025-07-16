@@ -8,6 +8,8 @@ import { Mesure } from '../../../core/Clients/Mesures';
 import { useRouter } from 'vue-router';
 import { Accordion } from '../../../core/Types/Components/Accordion';
 import moment from "moment"
+import { useUtilStore } from '../../../core/Data/stores/utilitaire';
+import { Edit as EditIcon } from '@element-plus/icons-vue';
 
 const router : any = useRouter()
 const consult = useConsultStore();
@@ -38,6 +40,7 @@ const renseign : Ref<boolean> = ref(false)
         glyc:null,
         temp:null,
     })
+
 const consultation : Ref<any> = ref({data:{}})
 
 const items:Array<Accordion> = [
@@ -79,8 +82,7 @@ const items:Array<Accordion> = [
 const client = new Patients()
 const clientConsult = new Consultation()
 const mesureClient = new Mesure();
-
-
+const util = useUtilStore();
 
 
 async function getPatient(){
@@ -89,11 +91,14 @@ async function getPatient(){
 
 async function renseigner(){
     mesure_rens.value.patient_id = patient.value.id
-        await mesureClient.add(mesure_rens.value)
-        mesure.value = await getMesure()
-        renseign.value=false
-        mesure_rens.value={
-        
+    await mesureClient.add(mesure_rens.value)
+    
+    // ✅ FIX: Properly handle the returned data
+    const mesureData = await getMesure()
+    mesure.value = Array.isArray(mesureData) ? mesureData[0] : mesureData
+    
+    renseign.value = false
+    mesure_rens.value = {
         taille:null,
         poids:null,
         tension:null,
@@ -101,21 +106,18 @@ async function renseigner(){
         saturation:null,
         glyc:null,
         temp:null,
- 
-
-    
     }
 }
 
 async function saveConsultation(){
     await clientConsult.update(finalisation)
-    router.push("/consultations")
+    router.push("/dossiers/"+patient.value.uid)
 }
-
 
 async function getMesure(){
     return await mesureClient.getByID(patient.value.id)
 }
+
 async function initPage(){
     const loading = ElLoading.service({
         lock: true,
@@ -124,7 +126,11 @@ async function initPage(){
     })
     consultation.value = await clientConsult.getOne(consult.consult)
     patient.value = await getPatient()
-    mesure.value = await getMesure()
+    
+    // ✅ FIX: Properly handle array data from API
+    const mesureData = await getMesure()
+    mesure.value = Array.isArray(mesureData) ? mesureData[0] : mesureData
+    
     loading.close()
 }
 
@@ -149,35 +155,62 @@ onBeforeMount(async ()=>{
                     </div>
                 </el-col>
                 <el-col :span="6">
-                    <div class="rounded-2xl p-4 bg-white mt-3 shadow-xl" >
-                        <el-row>
+                    <!-- Patient Info Block -->
+                    <div class="rounded-2xl p-4 bg-white mt-3 shadow-xl patient-info-block">
+                        <el-row align="middle">
                             <el-col :lg="8" :sm="24" class="text-center">
                                 <div class="demo-image__preview">
                                     <el-image
-                                        style="width: 80px; height: 80px"
+                                        style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid #e0e7ef; box-shadow: 0 2px 8px #e0e7ef;"
                                         :src="patient.avatar"
                                         fit="cover"
                                     />
                                 </div>
                             </el-col>
                             <el-col :lg="16" :sm="24">
-                                <span class=" font-bold"> {{ patient.sex=="M"?"M.":"Mme"}} {{patient.name }} {{ patient.surname }} </span><br>
-                                <span> né{{patient.sex=="M"?"":"e"}} le {{ patient.date_of_birth }}  </span><br>
-                                <span> CIN : {{patient.CIN}} </span> <br>
-                                <span> Téléphone : {{patient.phone}} </span> <br>
-                                <el-row>
-                                    <el-col :span="4" class="">
-                                        <el-icon class="text-error" v-if="patient.coverage==false"><CircleCloseFilled /></el-icon>
-                                        <el-icon class="text-success" v-else><CircleCheckFilled /></el-icon>
-                                    </el-col>
-                                    <el-col :span="18">
-                                        <span class="font-bold"> {{ patient.coverage==true?"":" Non"}} Couvert </span>
-                                        <span v-if="patient.coverage==true">  {{ patient.coverage_type }} </span>
-                                    </el-col>
-                                </el-row>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="font-bold text-lg">{{ patient.sex=="M"?"M.":"Mme"}} {{patient.name }} {{ patient.surname }}</span>
+                                    <el-button size="small" type="primary" :icon="EditIcon" circle @click="() => { util.setPatientID(patient.uid); util.setEditPatient(true); }" style="margin-left: 8px;" title="Modifier patient" />
+                                </div>
+                                <div class="patient-info-fields">
+                                    <div class="info-row">
+                                        <span class="info-label">{{ patient.sex == "M" ? "Né" : "Née" }} le</span>
+                                        <span class="info-value">{{ patient.date_of_birth }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Age :</span>
+                                        <span class="info-value">{{ patient.age !== null ? patient.age + " ans" : "Date de naissance invalide" }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">CIN :</span>
+                                        <span class="info-value">{{patient.CIN}}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">État civil :</span>
+                                        <span class="info-value">
+                                            {{ patient.civil_status === 1 
+                                                ? (patient.sex === 'F' ? 'Mariée' : 'Marié') 
+                                                : (patient.civil_status === 0 ? 'Célibataire' : 'Indéfini') }}
+                                        </span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Téléphone :</span>
+                                        <span class="info-value">{{patient.phone}}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Couverture :</span>
+                                        <span class="info-value">
+                                            <el-icon class="text-error" v-if="patient.coverage==false"><CircleCloseFilled /></el-icon>
+                                            <el-icon class="text-success" v-else><CircleCheckFilled /></el-icon>
+                                            <span class="font-bold ml-1">{{ patient.coverage==true?"":" Non"}} Couvert</span>
+                                            <span v-if="patient.coverage==true">  {{ patient.coverage_type }} </span>
+                                        </span>
+                                    </div>
+                                </div>
                             </el-col>
                         </el-row>
                     </div>
+                    <edit-patient />
 
                     <div class="rounded-2xl p-4 bg-white mt-3 shadow-xl" >
                         <div class="flex text-lg text-clickdoc">
@@ -196,13 +229,15 @@ onBeforeMount(async ()=>{
                                         </ul>    
                                     </li>
                                     <li> <b class="text-clickdoc"> Mesures : </b> <br>
-                                        <ul class="ml-4" v-if="mesure.id!=undefined">
+                                        <!-- ✅ FIX: Better condition checking -->
+                                        <ul class="ml-4" v-if="mesure && typeof mesure === 'object' && mesure.id">
                                             <li> Taille :  <b>{{ mesure.taille }}</b></li>
                                             <li> Poids : <b>{{ mesure.poids }} </b></li>
                                             <li> Tension :  <b>{{ mesure.tension }}</b></li>
                                             <li> Fréquence cardiaque :  <b>{{ mesure.fr_cardiaque }}</b></li>
                                             <li> Saturation :  <b>{{ mesure.saturation }}</b></li>
-                                            <li> Glycémie :  <b>{{ mesure.gly }}</b></li>
+                                            <!-- ✅ FIX: Correct property name -->
+                                            <li> Glycémie :  <b>{{ mesure.glyc }}</b></li>
                                             <li> Température :  <b>{{ mesure.temp }}</b></li>
                                             
                                             <li> Dernière saisie le <b>{{  moment(mesure.created_at).format("DD/MM/YYYY") }}</b>  </li>
@@ -236,7 +271,6 @@ onBeforeMount(async ()=>{
                                                     </el-input>
                                                 </el-form-item>
 
-                                                <!-- Update -->
                                                 <el-form-item label="Fréquence cardiaque" >
                                                     <el-input v-model="mesure_rens.fr_cardiaque">
                                                         <template #append>
@@ -254,7 +288,8 @@ onBeforeMount(async ()=>{
                                                 </el-form-item>
                                                 
                                                 <el-form-item label="Glycémie" >
-                                                    <el-input v-model="mesure_rens.gly">
+                                                    <!-- ✅ FIX: Correct property name -->
+                                                    <el-input v-model="mesure_rens.glyc">
                                                         <template #append>
                                                             mmol/L
                                                         </template>
@@ -268,8 +303,6 @@ onBeforeMount(async ()=>{
                                                         </template>
                                                     </el-input>
                                                 </el-form-item>
-                                                
-                                           
 
                                                 <el-form-item>
                                                     <button class="btn btn-sm btn-block background-clickdoc btn-block" type="button" @click="async()=>await renseigner()" > Enregistrer </button>
@@ -287,18 +320,16 @@ onBeforeMount(async ()=>{
                     </div>
 
 
-
-
                     <div class="rounded-2xl p-4 bg-white mt-3 shadow-xl" v-if="consultation.data.deets && consultation.data.deets.isFinished==0">
                         <button  class=" btn btn-error btn-block mb-2" @click="async () => { finalisation.isPrivate=true ; await saveConsultation()  }"> 
                             <el-icon>
                                 <Lock/>  
-                            </el-icon>&nbsp;&nbsp;&nbsp;&nbsp; Finaliser - privé 
+                            </el-icon>Finaliser - privé 
                         </button>
                         <button  class=" btn btn-success btn-block" @click="async () => { finalisation.isPrivate=false ; await saveConsultation()  }"> 
-                            <el-icon>R
+                            <el-icon>
                                 <Unlock/>  
-                            </el-icon>&nbsp;&nbsp;&nbsp;&nbsp; Finaliser - publique 
+                            </el-icon>Finaliser - publique 
                         </button>
                     </div>
                 </el-col>
@@ -306,3 +337,31 @@ onBeforeMount(async ()=>{
         </div>
     </main-layout>
 </template>
+
+<style scoped>
+.patient-info-block {
+  border: 1px solid #e0e7ef;
+  box-shadow: 0 2px 8px #e0e7ef;
+  background: #f9fbfd;
+  margin-bottom: 1rem;
+}
+.patient-info-fields {
+  margin-top: 0.5rem;
+}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid #f0f2f5;
+  font-size: 14px;
+}
+.info-label {
+  color: #7b8794;
+  font-weight: 500;
+}
+.info-value {
+  color: #222f3e;
+  font-weight: 600;
+}
+
+</style>

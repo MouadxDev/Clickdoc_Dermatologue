@@ -5,9 +5,10 @@
     import { Facture } from '../../core/Clients/Facture';
     import { useRdvStore } from '../../core/Data/stores/rendez-vous';
     import { Ref, onBeforeMount, ref , watch, reactive, computed } from 'vue';
+    import { ElMessage, ElMessageBox } from 'element-plus';
     import { Payment } from '../../core/Clients/Payment';
     import { useRouter } from 'vue-router';
-	import axios from "axios"
+    import axios from "axios"
 
     const store = useUtilStore()
     const rdvStore = useRdvStore()
@@ -26,14 +27,15 @@
         {prop:'heure',label:'Heure '}
     ]
     const showEditModal = ref(false);
-    
     const rdv = reactive({
         patient_id:"",
         id:"",
         heure:"",
-        statut:""
+        statut:"",
+        date:"",
+        page: 1,
+        toGet: 25
     })
-
 	const long_banner = ref<any>(null)
 	const square_banner = ref<any>(null)
     const heures = ["06:00","06:30","07:00","07:30","08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30","20:00"]
@@ -160,28 +162,72 @@
             text:"voir",
             action: (n:any)=>{show(n.uid)}
         },
+        {
+            icon: "Delete",
+            text:"Supprimer",
+            action: deleteRendezVous
+        },
     ]
 
     async function saveEdit() {
-        await rdvClient.update(rdv);        
+        await rdvClient.update(rdv);
         rdvStore.setTrigger(true);
     }
+
+    async function deleteRendezVous(patient: any) {
+        const confirm = await ElMessageBox.confirm(
+            'Êtes-vous sûr de vouloir retirer ce patient de la salle d\'attente ?',
+            'Confirmation',
+            {
+                confirmButtonText: 'Retirer',
+                cancelButtonText: 'Annuler',
+                type: 'warning',
+            }
+        ).then(() => true)
+        .catch(() => false); // If canceled, return false
+
+        if (!confirm) {
+            ElMessage.info('Action annulée.');
+            return;
+        }
+
+        try {
+            await rdvClient.delete(patient.id);
+            rdvStore.setTrigger(true);
+            ElMessage.success('Le patient a été retiré de la salle d\'attente.');
+        } catch (error) {
+            ElMessage.error('Une erreur s\'est produite lors de la suppression.');
+            
+        }
+    }
+
+
+
+
 
     function show(n:any)
     {
         router.push("/dossiers/"+n)
     }
 
-    function openEditModal(rowData) {
-        rdv.heure = rowData.heure
-        rdv.statut = rowData.statut
-        rdv.id = rowData.rdv_id
-        rdv.date = rowData.date
-        rdv.patient_id = rowData.patient_id
-        rdv.page = 1
-        rdv.toGet = 25
+    function openEditModal(rowData: any) {
+
+        rdv.heure = rowData.heure;
+        rdv.statut = rowData.statut;
+        rdv.id = rowData.rdv_id;
+        rdv.date = rowData.date;
+        rdv.patient_id = rowData.patient_id;
+        rdv.page = 1;
+        rdv.toGet = 25;
         showEditModal.value = true;
     }
+
+    async function isEmpty(heure: string) {
+        // For now, return true to allow all time slots
+        // This could be enhanced to check against existing appointments
+        return true;
+    }
+
 
     watch(rdvStore, async (newState) => {
         if(newState.trigger == true){
@@ -362,7 +408,7 @@
                     </el-row>
                     
                     <el-form-item>
-                        <button class="btn btn-sm btn-block background-clickdoc" type="button" @click="async () => {await saveEdit()}">Save</button>
+                    <button class="btn btn-sm btn-block background-clickdoc" type="button" @click="async () => {await saveEdit()}">Save</button>
                     </el-form-item>
                 </el-form>
             </el-dialog>

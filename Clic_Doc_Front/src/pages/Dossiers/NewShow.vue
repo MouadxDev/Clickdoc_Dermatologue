@@ -23,6 +23,7 @@ import { useUtilStore } from '../../../core/Data/stores/utilitaire';
 import { useAuthStore } from '../../../core/Data/stores/auth';
 import ENV from '../../../core/env';
 import DocumentGenerator from '../../components/DocumentGenerator.vue';
+import { Edit as EditIcon } from '@element-plus/icons-vue';
 
     const route = useRoute()
     const ws = useSocketStore().socket
@@ -289,35 +290,61 @@ import DocumentGenerator from '../../components/DocumentGenerator.vue';
                     </div>
                 </el-col>
                 <el-col :span="6">
-                    <div class="rounded-2xl p-4 bg-white mt-3 shadow-xl" >
-                        <el-row>
+                    <div class="rounded-2xl p-4 bg-white mt-3 shadow-xl patient-info-block">
+                        <el-row align="middle">
                             <el-col :lg="8" :sm="24" class="text-center">
                                 <div class="demo-image__preview">
                                     <el-image
-                                    style="width: 80px; height: 80px"
-                                    :src="patient.avatar"
-                                    fit="cover"
+                                        style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid #e0e7ef; box-shadow: 0 2px 8px #e0e7ef;"
+                                        :src="patient.avatar"
+                                        fit="cover"
                                     />
                                 </div>
                             </el-col>
                             <el-col :lg="16" :sm="24">
-                                <span class=" font-bold">{{ patient.sex === 'M' ? 'M.' : (patient.sex === 'F' ? 'Mme' : 'Mlle') }} {{patient.name }} {{ patient.surname }} </span><br>
-                                <span> né{{patient.sex=="M"?"":"e"}} le {{ patient.date_of_birth }}  </span><br>
-                                <span> CIN : {{patient.CIN}} </span> <br>
-                                <span> Téléphone : {{patient.phone}} </span> <br>
-                                <el-row>
-                                    <el-col :span="4" class="">
-                                        <el-icon class="text-error" v-if="patient.coverage==false"><CircleCloseFilled /></el-icon>
-                                        <el-icon class="text-success" v-else><CircleCheckFilled /></el-icon>
-                                    </el-col>
-                                    <el-col :span="18">
-                                        <span class="font-bold"> {{ patient.coverage==true?"":" Non"}} Couvert </span>
-                                        <span v-if="patient.coverage==true">  {{ patient.coverage_type }} </span>
-                                    </el-col>
-                                </el-row>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="font-bold text-lg">{{ patient.sex === 'M' ? 'M.' : (patient.sex === 'F' ? 'Mme' : 'Mlle') }} {{patient.name }} {{ patient.surname }}</span>
+                                    <el-button size="small" type="primary" :icon="EditIcon" circle @click="() => { util.setPatientID(patient.uid); util.setEditPatient(true); }" style="margin-left: 8px;" title="Modifier patient" />
+                                </div>
+                                <div class="patient-info-fields">
+                                    <div class="info-row">
+                                        <span class="info-label">Né{{patient.sex=="M"?"":"e"}} le</span>
+                                        <span class="info-value">{{ patient.date_of_birth }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Age :</span>
+                                        <span class="info-value">{{ patient.age !== null ? patient.age + " ans" : "Date de naissance invalide" }}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">CIN :</span>
+                                        <span class="info-value">{{patient.CIN}}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">État civil :</span>
+                                        <span class="info-value">
+                                            {{ patient.civil_status === 1 
+                                                ? (patient.sex === 'F' ? 'Mariée' : 'Marié') 
+                                                : (patient.civil_status === 0 ? 'Célibataire' : 'Indéfini') }}
+                                        </span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Téléphone :</span>
+                                        <span class="info-value">{{patient.phone}}</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <span class="info-label">Couverture :</span>
+                                        <span class="info-value">
+                                            <el-icon class="text-error" v-if="patient.coverage==false"><CircleCloseFilled /></el-icon>
+                                            <el-icon class="text-success" v-else><CircleCheckFilled /></el-icon>
+                                            <span class="font-bold ml-1">{{ patient.coverage==true?"":" Non"}} Couvert</span>
+                                            <span v-if="patient.coverage==true">  {{ patient.coverage_type }} </span>
+                                        </span>
+                                    </div>
+                                </div>
                             </el-col>
                         </el-row>
                     </div>
+                    <edit-patient />
                     <div class="rounded-2xl h-32 p-4 bg-white mt-3 shadow-xl" >
                         <div class="flex text-lg text-green-500">
                             <img src="https://clickdoc.webredirect.org/public/icons/argent.png" class="h-6 w-6"> &nbsp;&nbsp;
@@ -341,12 +368,7 @@ import DocumentGenerator from '../../components/DocumentGenerator.vue';
                                     <li> <b class="text-clickdoc">Constantes : </b>
                                         <ul class="ml-4">
                                             <li> Diabetes :  {{ patient.diabetes==1?"Type 1":patient.diabetes==2?"Type 2":patient.diabetes==3?"Prédiabètes":"Non" }} </li>
-                                            <li> Groupe sanguin : {{ patient.blood_type }} </li>
-                                            <li v-if="patient.sex === 'F' || patient.sex === 'Mlle'">
-                                                Statut marital :  {{ patient.sex === 'F' ? 'Mariée' : 'Célibataire' }}
-                                            </li>
-
-
+                                            <li> Groupe sanguin : {{ patient.blood_type }} </li>                          
                                         </ul>    
                                     </li>
                                     <li> <b class="text-clickdoc"> Mesures : </b> <br>
@@ -456,13 +478,30 @@ import DocumentGenerator from '../../components/DocumentGenerator.vue';
         </div>
     </main-layout>
 </template>
-<style>
-    .text-success 
-    {
-        color:#23c552
-    }
-    .text-error 
-    {
-        color:#f84f31
-    }
+<style scoped>
+.patient-info-block {
+  border: 1px solid #e0e7ef;
+  box-shadow: 0 2px 8px #e0e7ef;
+  background: #f9fbfd;
+  margin-bottom: 1rem;
+}
+.patient-info-fields {
+  margin-top: 0.5rem;
+}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid #f0f2f5;
+  font-size: 14px;
+}
+.info-label {
+  color: #7b8794;
+  font-weight: 500;
+}
+.info-value {
+  color: #222f3e;
+  font-weight: 600;
+}
+
 </style>

@@ -13,19 +13,37 @@ class WaitingList extends Controller
      * Display a listing of the resource.
      */
     
-    public function index()
-    {
-        $wL = WL::whereDate("waiting_lists.created_at",Carbon::today());
-		$wL->where("state","=","waiting")->where("waiting_lists.entity_id",'=',auth()->user()->entity_id)
-			->join("acte_medicals as a","a.id",'=','waiting_lists.type')
-			-> join("patients as p",'waiting_lists.patient_id','=','p.id')
-        	->select("waiting_lists.*","p.name","p.surname","p.avatar","p.uid","a.libelle as type");
-        if(request()->has("toGet"))
-            return $wL->paginate(request()->toGet);
-        return [$wL::all(), $entity_id];
-        
-    }
-    
+     public function index()
+     {
+         $wL = WL::whereDate("waiting_lists.created_at", Carbon::today())
+             ->where("waiting_lists.state", "=", "waiting")
+             ->where("waiting_lists.entity_id", '=', auth()->user()->entity_id)
+             ->join("acte_medicals as a", "a.id", '=', "waiting_lists.type")
+             ->join("patients as p", "waiting_lists.patient_id", '=', "p.id")
+             ->leftJoin("rendez_vouses as r", function ($join) {
+                 $join->on("r.patient_id", "=", "waiting_lists.patient_id")
+                      ->whereRaw("r.date = (SELECT MAX(date) FROM rendez_vouses WHERE patient_id = waiting_lists.patient_id)");
+             })
+             ->select(
+                 "waiting_lists.*",
+                 "p.name",
+                 "p.surname",
+                 "p.avatar",
+                 "p.uid",
+                 "a.libelle as type",
+                 "r.id as rdv_id",
+                 "r.heure as heure",
+                 "r.date as rdv_date",
+                 "r.heure as rdv_heure",
+                 "r.statut as rdv_statut"
+             );
+     
+         if (request()->has("toGet")) {
+             return $wL->paginate(request()->toGet);
+         }
+     
+         return $wL->get();
+     }
 
     /**
      * Show the form for creating a new resource.

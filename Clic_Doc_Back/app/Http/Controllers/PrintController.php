@@ -152,7 +152,8 @@ class PrintController extends Controller
 		// Fetch unpaid invoices for the patient with pagination
 		$factures = Facture::join('consultations', 'factures.consultation_id', '=', 'consultations.id')
 			->where('consultations.patient_id', '=', $patientId)
-			->where('factures.statut', '=', 'Payé en totalité')
+			// ->where('factures.statut', '=', 'Payé en totalité')
+			->where('factures.amount', '>', 0)
 			->select('factures.*')
 			->paginate(10); // Use paginate()
 	

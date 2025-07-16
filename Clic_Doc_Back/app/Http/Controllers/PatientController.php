@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\User;
-
+use Carbon\Carbon;
 class PatientController extends Controller
 {
     /**
@@ -14,13 +14,14 @@ class PatientController extends Controller
     public function index()
     {
         $model = new Patient;
-        if(request()->has("toGet"))
-            return $model->paginate(request()->toGet);
-        else
-        {
-            return $model::all();
+    
+        if (request()->has("toGet")) {
+            return $model->orderBy('id', 'desc')->paginate(request()->toGet);
+        } else {
+            return $model::orderBy('id', 'desc')->get();
         }
     }
+    
 
     /**
      * Show the form for creating a new resource.
@@ -77,6 +78,7 @@ class PatientController extends Controller
         $patient->diabetes = $request->diabetes;
         $patient->blood_type = $request->blood_type;
         $patient->coverage = $request->coverage;
+        $patient->civil_status = $request->civil_status;
     
         // Set default values for optional fields if they are not provided
         $patient->coverage_type = $request->coverage_type ?? 'N/A';
@@ -138,9 +140,47 @@ class PatientController extends Controller
      */
     public function show(string $id)
     {
-        return Patient::where("uid","=",$id)->first();
+        $patient = Patient::where("uid", "=", $id)->first();
+    
+        if (!$patient) {
+            return response()->json([
+                'message' => 'Patient introuvable.'
+            ], 404);
+        }
+    
+        try {
+            $dob = Carbon::createFromFormat('d/m/Y', $patient->date_of_birth);
+            $birthYear = (int)$dob->format('Y');
+            $currentYear = (int)now()->format('Y');
+            $age = $currentYear - $birthYear;
+    
+            $dateOfBirthFormatted = $dob->format('d/m/Y');
+        } catch (\Exception $e) {
+            $age = null;
+            $dateOfBirthFormatted = null;
+        }
+    
+        return response()->json([
+            'id' => $patient->id,
+            'uid' => $patient->uid,
+            'name' => $patient->name,
+            'surname' => $patient->surname,
+            'sex' => $patient->sex,
+            'civil_status' => $patient->civil_status,
+            'phone' => $patient->phone,
+            'date_of_birth' => $dateOfBirthFormatted,
+            'age' => $age,
+            'diabetes' => $patient->diabetes,
+            'blood_type' => $patient->blood_type,
+            'CIN' => $patient->CIN,
+            'avatar' => $patient->avatar,
+            'coverage' => $patient->coverage,
+            'coverage_number' => $patient->coverage_number,
+            'coverage_type' => $patient->coverage_type,
+            'observation' => $patient->observation,
+        ]);
     }
-
+    
     /**
      * Show the form for editing the specified resource.
      */
@@ -164,6 +204,7 @@ class PatientController extends Controller
         $patient -> CIN = request() -> CIN ;
         $patient -> diabetes = request() -> diabetes ;
         $patient -> blood_type = request() -> blood_type ;
+        $patient -> civil_status = request() -> civil_status ;
         $patient -> coverage = request() -> coverage ;
         $patient -> coverage_type = request() -> coverage_type ;
 		$patient -> coverage_number = request() -> coverage_number ;

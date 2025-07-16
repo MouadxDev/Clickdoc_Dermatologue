@@ -164,44 +164,61 @@ class FactureController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-
-        $id = request()->consultation_id;
-        $c = Consultation::find($id);
-
-        $waiting = ModelWaitingList::find($c->wl_id);
-        $acte = ActeMedical::findOrFail($waiting->type);
-        
-        // $f = new Facture();
-        // $f -> consultation_id  = $id;
-        // $f -> amount = 0;
-        // $f -> save();
-        // $f -> uid = "F".date("Y")."-".str_pad($f->id, 6, '0', STR_PAD_LEFT);;
-        // $f -> save();
-        
-        $f = new Facture();
-        $f->consultation_id = $id;
-        $f->amount = 0;
-        $f->save();
-        $f->refresh();
-        $f->uid = "F".date("Y")."-".str_pad($f->id, 6, '0', STR_PAD_LEFT);
-        $f->save();
-
-        
-
-        $doctor_fee = new ArticleFacture();
-        $doctor_fee -> facture_id = $f -> id;
-        $doctor_fee -> libelle = $acte->libelle;
-        $doctor_fee -> prix = $acte -> prix ;
-        $doctor_fee -> type = 0 ;
-        $doctor_fee -> save();
-
-        $liste = ArticleFacture::where("facture_id",'=',$id)->orderBy("type",'asc')->get();
-
-        return ["liste"=>$liste , "facture"=>$f];
-
+    
+public function store(Request $request) 
+{
+    $id = request()->consultation_id;
+    $c = Consultation::find($id);
+    
+    $waiting = ModelWaitingList::find($c->wl_id);
+    $acte = ActeMedical::findOrFail($waiting->type);
+    
+    $f = new Facture();
+    $f->consultation_id = $id;
+    $f->amount = 0;
+    $f->save();
+    
+    // Generate unique UID by checking existing ones
+    $currentYear = date('Y');
+    $yearPrefix = "F" . $currentYear . "-";
+    
+    // Get the highest existing number for this year
+    $lastFacture = Facture::where('uid', 'LIKE', $yearPrefix . '%')
+        ->orderBy('uid', 'desc')
+        ->first();
+    
+    if ($lastFacture) {
+        // Extract the number from the last UID
+        $lastNumber = intval(substr($lastFacture->uid, -6));
+        $nextNumber = $lastNumber + 1;
+    } else {
+        // First invoice of the year
+        $nextNumber = 1;
     }
+    
+    // Ensure uniqueness with a loop (just in case)
+    do {
+        $uid = $yearPrefix . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+        $exists = Facture::where('uid', $uid)->exists();
+        if ($exists) {
+            $nextNumber++;
+        }
+    } while ($exists);
+    
+    $f->uid = $uid;
+    $f->save();
+    
+    $doctor_fee = new ArticleFacture();
+    $doctor_fee->facture_id = $f->id;
+    $doctor_fee->libelle = $acte->libelle;
+    $doctor_fee->prix = $acte->prix;
+    $doctor_fee->type = 0;
+    $doctor_fee->save();
+    
+    $liste = ArticleFacture::where("facture_id", '=', $f->id)->orderBy("type", 'asc')->get();
+    
+    return ["liste" => $liste, "facture" => $f];
+}
 
     /**
      * Display the specified resource.

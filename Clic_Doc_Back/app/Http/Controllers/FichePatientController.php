@@ -59,7 +59,7 @@ class FichePatientController extends Controller
     
         // Step 1: Get consultations paginated for the patient, include created_at
         $consultationsQuery = DB::table('consultations as c')
-            ->select('c.id as consultation_id', 'c.patient_id', 'c.motif', 'c.created_at')
+            ->select('c.id as consultation_id', 'c.patient_id', 'c.motif','c.notes', 'c.created_at')   
             ->where('c.patient_id', $id);
     
         // Get paginated consultations (using skip/take because Query Builder paginate() returns full paginator with URLs)
@@ -89,8 +89,7 @@ class FichePatientController extends Controller
             ->groupBy('consultation_id');
     
         // Build combined result for each consultation
-        $result = [];
-    
+        $result = [];    
         foreach ($consultations as $consultation) {
             $cId = $consultation->consultation_id;
     
@@ -98,6 +97,7 @@ class FichePatientController extends Controller
                 'consultation_id' => $cId,
                 'patient_id' => $consultation->patient_id,
                 'motif' => $consultation->motif,
+                'notes' => $consultation->notes,
                 'created_at' => $consultation->created_at,  // <-- added here
                 'analyses' => isset($analyses[$cId]) ? $analyses[$cId]->pluck('analyse_name')->toArray() : [],
                 'medications' => isset($medications[$cId]) ? $medications[$cId]->pluck('medicament_name')->toArray() : [],
